@@ -1,0 +1,13 @@
+.vercel/
+release-assets/
+desktop/.tools/
+desktop/.nuget/
+**/bin/
+**/obj/
+**/artifacts/
+*.db
+*.db-wal
+*.db-shm
+settings.json
+auth.json
+.env*

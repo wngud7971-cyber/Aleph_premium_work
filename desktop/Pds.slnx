@@ -1,0 +1,5 @@
+<Solution>
+  <Project Path="Pds.Core/Pds.Core.csproj" />
+  <Project Path="Pds.Desktop/Pds.Desktop.csproj" />
+  <Project Path="Pds.Checks/Pds.Checks.csproj" />
+</Solution>
