@@ -1,4 +1,5 @@
 .vercel/
+.vs/
 release-assets/
 desktop/.tools/
 desktop/.nuget/
@@ -8,6 +9,8 @@ desktop/.nuget/
 *.db
 *.db-wal
 *.db-shm
+*.db-journal
+*.user
 settings.json
 auth.json
 .env*

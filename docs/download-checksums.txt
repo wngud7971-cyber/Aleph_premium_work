@@ -1,1 +1,1 @@
-34b151bcfe53d018d678a2999d3835daf5ad22ea985720a0107b1db6b67ceb24  PDS-Windows-x64-v0.1.0-preview.zip
+769debafec40627dfdc9109ce2116072c5f939e5b667dab76934cd444c2e6b0a  PDS-Windows-x64-stage2-legible-20261017.zip

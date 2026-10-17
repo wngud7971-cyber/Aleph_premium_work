@@ -1,0 +1,20 @@
+{
+  "success": true,
+  "results": [
+    {
+      "layout": "fixed-light",
+      "values": 301,
+      "maxGeometryDelta": 0,
+      "maxAdvanceDelta": 0,
+      "cardFits": true
+    },
+    {
+      "layout": "fixed-dark",
+      "values": 301,
+      "maxGeometryDelta": 0,
+      "maxAdvanceDelta": 0,
+      "cardFits": true
+    }
+  ],
+  "personalDataUsed": false
+}

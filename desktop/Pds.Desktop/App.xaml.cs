@@ -7,24 +7,35 @@ namespace Pds.Desktop;
 public partial class App : System.Windows.Application
 {
     private Mutex? singleInstance;
-    protected override void OnStartup(StartupEventArgs e)
+    private InstanceActivation? activation;
+    protected override async void OnStartup(StartupEventArgs e)
     {
         base.OnStartup(e);
-        var verify = e.Args.Contains("--verify") || e.Args.Contains("--verify-reopen");
+        var verify = e.Args.Contains("--verify") || e.Args.Contains("--verify-reopen") || e.Args.Contains("--verify-features") || e.Args.Contains("--verify-review-reopen") || e.Args.Contains("--verify-tray") || e.Args.Contains("--verify-endurance");
         var isolated = e.Args.FirstOrDefault(a => a.StartsWith("--data-dir=", StringComparison.Ordinal));
         var dataPath = isolated is not null ? Path.GetFullPath(isolated[11..])
             : verify ? Path.Combine(Path.GetTempPath(), "PdsVerification", Guid.NewGuid().ToString("N"))
             : Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "PdsPrototype");
         if (!verify)
         {
-            singleInstance = new Mutex(true, "Local\\PdsPrototype-" + Environment.UserName, out var ownsMutex);
-            if (!ownsMutex) { System.Windows.MessageBox.Show("이미 실행 중이에요. 작업 표시줄 또는 트레이에서 PDS를 열어 주세요.", "PDS"); Shutdown(); return; }
+            var name = InstanceActivation.NameFor(dataPath);
+            singleInstance = new Mutex(true, isolated is null ? "Local\\PdsPrototype-" + Environment.UserName : "Local\\" + name, out var ownsMutex);
+            activation = new InstanceActivation(name);
+            if (!ownsMutex)
+            {
+                if (!await activation.RequestAsync(TimeSpan.FromSeconds(3)))
+                    System.Windows.MessageBox.Show("기존 PDS 창을 열지 못했어요. 이전 버전이 실행 중이면 트레이에서 열어 주세요. 저장하지 않은 입력이 있을 수 있으니 강제로 종료하지 마세요.", "PDS");
+                Shutdown(); return;
+            }
         }
         try
         {
             var repository = new PlanRepository(Path.Combine(dataPath, "records.db"));
-            var window = new MainWindow(repository, new SettingsStore(Path.Combine(dataPath, "settings.json")), verify, e.Args.Contains("--verify-reopen"));
+            var window = new MainWindow(repository, new SettingsStore(Path.Combine(dataPath, "settings.json"), repository), verify, e.Args.Contains("--verify-reopen"), e.Args.Contains("--verify-features"), e.Args.Contains("--verify-review-reopen"), isolated is null && !verify, e.Args.Contains("--verify-tray"), e.Args.Contains("--verify-endurance"));
             MainWindow = window;
+            if (verify) { window.ShowActivated = false; window.ShowInTaskbar = false; window.WindowStartupLocation = WindowStartupLocation.Manual; window.Left = -30000; window.Top = -30000; }
+            activation?.Listen(() => Dispatcher.InvokeAsync(window.RestoreWindow).Task,
+                _ => Dispatcher.BeginInvoke(() => window.ReportActivationUnavailable()));
             window.Show();
         }
         catch (Exception ex)
@@ -35,5 +46,5 @@ public partial class App : System.Windows.Application
         }
     }
 
-    protected override void OnExit(ExitEventArgs e) { singleInstance?.Dispose(); base.OnExit(e); }
+    protected override void OnExit(ExitEventArgs e) { activation?.Dispose(); singleInstance?.Dispose(); base.OnExit(e); }
 }

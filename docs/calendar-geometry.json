@@ -1,0 +1,56 @@
+{
+  "success": true,
+  "simulatedDpiScales": [
+    1,
+    1.25,
+    1.5,
+    1.75,
+    2
+  ],
+  "layouts": [
+    {
+      "label": "calendar-light",
+      "width": 102,
+      "height": 102,
+      "widthSpread": 0,
+      "heightSpread": 0,
+      "inkTopDelta": 0.2697324752807617,
+      "inkHeightDelta": 0,
+      "dateFontSize": 15.333333333333334,
+      "holidayFontSize": 12.31777809920134
+    },
+    {
+      "label": "calendar-dark",
+      "width": 102,
+      "height": 102,
+      "widthSpread": 0,
+      "heightSpread": 0,
+      "inkTopDelta": 0.2697324752807617,
+      "inkHeightDelta": 0,
+      "dateFontSize": 15.333333333333334,
+      "holidayFontSize": 12.31777809920134
+    },
+    {
+      "label": "sidebar-light",
+      "width": 86,
+      "height": 86,
+      "widthSpread": 0,
+      "heightSpread": 0,
+      "inkTopDelta": 0.2697324752807617,
+      "inkHeightDelta": 0,
+      "dateFontSize": 15.333333333333334,
+      "holidayFontSize": 12.31777809920134
+    },
+    {
+      "label": "sidebar-dark",
+      "width": 86,
+      "height": 86,
+      "widthSpread": 0,
+      "heightSpread": 0,
+      "inkTopDelta": 0.2697324752807617,
+      "inkHeightDelta": 0,
+      "dateFontSize": 15.333333333333334,
+      "holidayFontSize": 12.31777809920134
+    }
+  ]
+}

@@ -1,0 +1,140 @@
+{
+  "embeddedFont": "pack://application:,,,/Pds.Desktop;component/Fonts/gowundodum-regular.ttf",
+  "accent": "#E3BACA",
+  "bodySize": 13.333333333333334,
+  "displayFont": "Georgia",
+  "samples": [
+    {
+      "details": false,
+      "dark": false,
+      "width": 900,
+      "height": 880,
+      "weeks": 4,
+      "squareCells": true,
+      "labelsFit": true,
+      "allWeeksVisible": true,
+      "calendarVerticalScrolling": false
+    },
+    {
+      "details": false,
+      "dark": false,
+      "width": 900,
+      "height": 880,
+      "weeks": 5,
+      "squareCells": true,
+      "labelsFit": true,
+      "allWeeksVisible": true,
+      "calendarVerticalScrolling": false
+    },
+    {
+      "details": false,
+      "dark": false,
+      "width": 900,
+      "height": 880,
+      "weeks": 6,
+      "squareCells": true,
+      "labelsFit": true,
+      "allWeeksVisible": true,
+      "calendarVerticalScrolling": false
+    },
+    {
+      "details": false,
+      "dark": true,
+      "width": 900,
+      "height": 880,
+      "weeks": 4,
+      "squareCells": true,
+      "labelsFit": true,
+      "allWeeksVisible": true,
+      "calendarVerticalScrolling": false
+    },
+    {
+      "details": false,
+      "dark": true,
+      "width": 900,
+      "height": 880,
+      "weeks": 5,
+      "squareCells": true,
+      "labelsFit": true,
+      "allWeeksVisible": true,
+      "calendarVerticalScrolling": false
+    },
+    {
+      "details": false,
+      "dark": true,
+      "width": 900,
+      "height": 880,
+      "weeks": 6,
+      "squareCells": true,
+      "labelsFit": true,
+      "allWeeksVisible": true,
+      "calendarVerticalScrolling": false
+    },
+    {
+      "details": true,
+      "dark": false,
+      "width": 900,
+      "height": 880,
+      "weeks": 4,
+      "squareCells": true,
+      "labelsFit": true,
+      "allWeeksVisible": true,
+      "calendarVerticalScrolling": false
+    },
+    {
+      "details": true,
+      "dark": false,
+      "width": 900,
+      "height": 880,
+      "weeks": 5,
+      "squareCells": true,
+      "labelsFit": true,
+      "allWeeksVisible": true,
+      "calendarVerticalScrolling": false
+    },
+    {
+      "details": true,
+      "dark": false,
+      "width": 900,
+      "height": 880,
+      "weeks": 6,
+      "squareCells": true,
+      "labelsFit": true,
+      "allWeeksVisible": true,
+      "calendarVerticalScrolling": false
+    },
+    {
+      "details": true,
+      "dark": true,
+      "width": 900,
+      "height": 880,
+      "weeks": 4,
+      "squareCells": true,
+      "labelsFit": true,
+      "allWeeksVisible": true,
+      "calendarVerticalScrolling": false
+    },
+    {
+      "details": true,
+      "dark": true,
+      "width": 900,
+      "height": 880,
+      "weeks": 5,
+      "squareCells": true,
+      "labelsFit": true,
+      "allWeeksVisible": true,
+      "calendarVerticalScrolling": false
+    },
+    {
+      "details": true,
+      "dark": true,
+      "width": 900,
+      "height": 880,
+      "weeks": 6,
+      "squareCells": true,
+      "labelsFit": true,
+      "allWeeksVisible": true,
+      "calendarVerticalScrolling": false
+    }
+  ]
+}
