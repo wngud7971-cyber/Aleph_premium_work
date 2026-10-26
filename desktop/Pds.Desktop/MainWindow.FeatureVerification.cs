@@ -23,6 +23,17 @@ public partial class MainWindow
         }
         try
         {
+            if(Environment.GetEnvironmentVariable("PDS_VERIFY_SIDEBAR_ONLY")=="1")
+            {await VerifySidebarMotionAsync(checks);FinishVerification(null);return;}
+            if(Environment.GetEnvironmentVariable("PDS_VERIFY_MOTION_ONLY")=="1")
+            {await VerifyPageTurnAsync(checks);FinishVerification(null);return;}
+            if(Environment.GetEnvironmentVariable("PDS_VERIFY_FEEDBACK_ONLY")=="1")
+            {await VerifyFeedbackBatchAsync(checks);FinishVerification(null);return;}
+            if(Environment.GetEnvironmentVariable("PDS_VERIFY_RECORDS_ONLY")=="1")
+            {await VerifyEmbeddedRecordsAsync(checks);FinishVerification(null);return;}
+            if(Environment.GetEnvironmentVariable("PDS_VERIFY_UNIFIED_ONLY")=="1")
+            {await VerifyUnifiedMotionAsync(checks);FinishVerification(null);return;}
+            Check(!statisticsOpen && CalendarArea.IsVisible,"initial-page-is-calendar-home");
             var iconUri = new Uri("pack://application:,,,/Pds.Desktop;component/Assets/Pds.ico");
             using (var iconStream = System.Windows.Application.GetResourceStream(iconUri)!.Stream)
             using (var icon = new System.Drawing.Icon(iconStream))
@@ -95,7 +106,7 @@ public partial class MainWindow
             Check(true, "12-fixed-window-theme-sidebar-calendar-week-layouts");
             Check(true, "all-four-five-six-week-rows-visible-without-vertical-scrolling");
             Check(Math.Abs(FontSize - UiTypography.Grow(12)) < 0.001 && Math.Abs(Brand.FontSize - UiTypography.Grow(20)) < 0.001
-                && Math.Abs(MeditationRemaining.FontSize - UiTypography.Grow(24)) < 0.001, "body-logo-timer-grow-by-one-typographic-point");
+                && Math.Abs(MeditationRemaining.FontSize - UiTypography.Grow(24)) < 0.001, "body-logo-timer-follow-approved-two-point-scale");
             settings.Compact = false; ApplyWindowLayout(openDetails: true); SelectRecordTab(true); DrawCalendar(); DrawWorkouts();
             await Dispatcher.InvokeAsync(() => { }, DispatcherPriority.ApplicationIdle); Capture("workouts.png");
             SetExercise("cycling-indoor"); WorkoutMinutes.Text = "30"; WorkoutPane.ScrollToBottom();
@@ -122,6 +133,20 @@ public partial class MainWindow
             Check(selected == dayBeforeCancel && month == monthBeforeCancel && TitleInput.Text == "오늘 이동 취소 시 보호", "today-navigation-cancel-keeps-displayed-month-date-and-input");
             pendingChangeDecision = () => MessageBoxResult.No; await ShowTodayAsync(); pendingChangeDecision = null;
             Check(selected == LocalToday && month == new DateOnly(LocalToday.Year, LocalToday.Month, 1) && !Pending, "today-navigation-confirm-updates-month-and-date-together");
+            await VerifyDesignPresentationAsync(checks);
+            await VerifyJournalFeaturesAsync(checks);
+            await VerifyStudyOverviewAsync(checks);
+            await VerifyAttachmentsAsync(checks);
+            await VerifyFixedCostsAsync(checks);
+            await VerifyRecordToolsAsync(checks);
+            await VerifySidebarMotionAsync(checks);
+            await VerifyFontStepAsync(checks);
+            await VerifyCrispSpacingAsync(checks);
+            await VerifySteadyUiAsync(checks);
+            await VerifyPageTurnAsync(checks);
+            await VerifyFeedbackBatchAsync(checks);
+            await VerifyEmbeddedRecordsAsync(checks);
+            await VerifyUnifiedMotionAsync(checks);
             PersistSettings();
             File.WriteAllText(Path.Combine(Path.GetDirectoryName(repository.DatabasePath)!, "features.json"), JsonSerializer.Serialize(new { success = true, checks, count = checks.Count, personalDataUsed = false, realTrayClickTested = false, subjectiveTransitionSmoothnessTested = false }, new JsonSerializerOptions { WriteIndented = true }));
             FinishVerification(null);

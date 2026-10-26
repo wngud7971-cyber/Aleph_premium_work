@@ -8,7 +8,13 @@ $taskArgument = '--data-dir="' + $taskVerification + '"'
 $env:DOTNET_ROOT = $null
 foreach ($taskMode in @('--verify-features','--verify-review-reopen','--verify-tray')) {
     $taskProcess = Start-Process -FilePath $taskExe -ArgumentList @($taskMode, $taskArgument) -WindowStyle Hidden -PassThru
-    if (-not $taskProcess.WaitForExit(45000)) { throw "실행 묶음 검사가 아직 진행 중입니다: $taskVerification" }
+    # The expanded feature suite contains several hundred independent UI checks.
+    # Yield a progress line every 45 seconds; retain a bounded three-minute limit.
+    for ($taskAttempt=0; $taskAttempt -lt 4; $taskAttempt++) {
+        if ($taskProcess.WaitForExit(45000)) { break }
+        Write-Output "화면·모션 검사가 진행 중입니다: $taskVerification"
+    }
+    if (-not $taskProcess.HasExited) { throw "실행 묶음 검사가 아직 진행 중입니다: $taskVerification" }
     if ($taskProcess.ExitCode -ne 0) {
         Get-Content -LiteralPath (Join-Path $taskVerification 'verification-error.txt') -ErrorAction SilentlyContinue
         Get-Content -LiteralPath (Join-Path $taskVerification 'startup-error.txt') -ErrorAction SilentlyContinue

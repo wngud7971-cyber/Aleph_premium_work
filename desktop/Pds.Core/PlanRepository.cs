@@ -20,7 +20,7 @@ public sealed partial class PlanRepository
         using var version = connection.CreateCommand();
         version.CommandText = "PRAGMA user_version";
         var schema = Convert.ToInt32(version.ExecuteScalar(), CultureInfo.InvariantCulture);
-        if (schema > 7) throw new InvalidDataException("이 앱보다 새로운 형식의 기록이에요. 최신 앱으로 열어 주세요.");
+        if (schema > 12) throw new InvalidDataException("이 앱보다 새로운 형식의 기록이에요. 최신 앱으로 열어 주세요.");
         using var transaction = connection.BeginTransaction();
         using var create = connection.CreateCommand();
         create.Transaction = transaction;
@@ -56,9 +56,47 @@ public sealed partial class PlanRepository
                 UNIQUE(plan_id,cutoff_date));
             CREATE TABLE IF NOT EXISTS preferences (id INTEGER PRIMARY KEY CHECK(id=1),json TEXT NOT NULL);
             CREATE TABLE IF NOT EXISTS anniversaries (id TEXT PRIMARY KEY,revision INTEGER NOT NULL,name TEXT NOT NULL,json TEXT NOT NULL);
-            PRAGMA user_version = 7;
+            CREATE TABLE IF NOT EXISTS money_entries (
+                id TEXT PRIMARY KEY,date TEXT NOT NULL REFERENCES days(date),position INTEGER NOT NULL,
+                kind INTEGER NOT NULL CHECK(kind IN(0,1)),won INTEGER NOT NULL CHECK(won>0 AND won<=999999999999),
+                category TEXT NOT NULL,note TEXT NOT NULL CHECK(length(note)<=2000));
+            CREATE INDEX IF NOT EXISTS money_date ON money_entries(date,position);
+            CREATE TABLE IF NOT EXISTS study_entries (
+                id TEXT PRIMARY KEY,date TEXT NOT NULL REFERENCES days(date),position INTEGER NOT NULL,
+                title TEXT NOT NULL CHECK(length(title)<=200),content TEXT NOT NULL CHECK(length(content)<=10000),
+                summary TEXT NOT NULL CHECK(length(summary)<=2000));
+            CREATE INDEX IF NOT EXISTS study_date ON study_entries(date,position);
+            CREATE TABLE IF NOT EXISTS study_attachments (
+                id TEXT PRIMARY KEY,study_id TEXT NOT NULL REFERENCES study_entries(id) ON DELETE CASCADE,
+                position INTEGER NOT NULL,name TEXT NOT NULL,length INTEGER NOT NULL CHECK(length>=0 AND length<=52428800),sha256 TEXT NOT NULL);
+            CREATE INDEX IF NOT EXISTS study_attachments_study ON study_attachments(study_id,position);
+            CREATE TABLE IF NOT EXISTS money_details (
+                entry_id TEXT PRIMARY KEY REFERENCES money_entries(id) ON DELETE CASCADE,
+                title TEXT NOT NULL,is_fixed INTEGER NOT NULL,repeat_monthly INTEGER NOT NULL,fixed_cost_id TEXT);
+            CREATE TABLE IF NOT EXISTS fixed_costs (id TEXT PRIMARY KEY,json TEXT NOT NULL);
+            CREATE TABLE IF NOT EXISTS fixed_cost_occurrences (
+                rule_id TEXT NOT NULL REFERENCES fixed_costs(id) ON DELETE CASCADE,month TEXT NOT NULL,entry_id TEXT NOT NULL,
+                PRIMARY KEY(rule_id,month),UNIQUE(entry_id));
+            CREATE TABLE IF NOT EXISTS monthly_budgets(month TEXT PRIMARY KEY,won INTEGER NOT NULL CHECK(won>0 AND won<=999999999999));
+            CREATE TABLE IF NOT EXISTS deleted_records(id TEXT PRIMARY KEY,date TEXT NOT NULL,deleted_utc TEXT NOT NULL,json TEXT NOT NULL);
+            CREATE INDEX IF NOT EXISTS deleted_time ON deleted_records(deleted_utc DESC,id);
+            CREATE TABLE IF NOT EXISTS deleted_attachments(trash_id TEXT NOT NULL REFERENCES deleted_records(id) ON DELETE CASCADE,
+                file_id TEXT NOT NULL,name TEXT NOT NULL,length INTEGER NOT NULL,sha256 TEXT NOT NULL,PRIMARY KEY(trash_id,file_id));
+            CREATE INDEX IF NOT EXISTS deleted_files ON deleted_attachments(file_id);
+            PRAGMA user_version = 12;
             """;
         create.ExecuteNonQuery();
+        using(var columns=connection.CreateCommand())
+        {
+            columns.Transaction=transaction;columns.CommandText="PRAGMA table_info(study_entries)";
+            bool hasDuration=false;
+            using(var reader=columns.ExecuteReader())while(reader.Read())hasDuration|=reader.GetString(1)=="duration_minutes";
+            if(!hasDuration)
+            {
+                columns.CommandText="ALTER TABLE study_entries ADD COLUMN duration_minutes INTEGER NULL CHECK(duration_minutes BETWEEN 1 AND 1440)";
+                columns.ExecuteNonQuery();
+            }
+        }
         transaction.Commit();
     }
 
@@ -81,7 +119,7 @@ public sealed partial class PlanRepository
         return result;
     }
 
-    private static DaySnapshot ReadDay(SqliteConnection connection, SqliteTransaction transaction, DateOnly date)
+    private static DaySnapshot ReadDay(SqliteConnection connection, SqliteTransaction transaction, DateOnly date, bool includeJournal = true)
     {
         using var command = connection.CreateCommand();
         command.Transaction = transaction;
@@ -113,11 +151,16 @@ public sealed partial class PlanRepository
         DayReview? review;
         using (var reader = command.ExecuteReader())
             review = reader.Read() ? new DayReview(reader.GetString(0), reader.GetString(1), reader.GetString(2)).Normalize() : null;
-        return new(date, revision, entries) { Workouts = workouts, Review = review };
+        var day = new DaySnapshot(date, revision, entries) { Workouts = workouts, Review = review };
+        return includeJournal ? ReadJournal(connection, transaction, day) : day;
     }
 
-    public DaySnapshot Save(DaySnapshot snapshot)
+    public DaySnapshot Save(DaySnapshot snapshot)=>SaveCore(snapshot);
+    private DaySnapshot SaveCore(DaySnapshot snapshot,DeletedRecord? restoring=null)
     {
+        if(snapshot.Money is null)throw new ArgumentException("가계부 목록을 확인해 주세요.");
+        snapshot=snapshot with { Money=snapshot.Money.Select(e=>e.RepeatMonthly && e.FixedCostId is null ? e with { FixedCostId=e.Id } : e).ToArray() };
+        ValidateJournal(snapshot);
         snapshot.Review?.Validate();
         var review = snapshot.Review?.Normalize();
         foreach (var plan in snapshot.Plans) plan.Validate();
@@ -134,7 +177,17 @@ public sealed partial class PlanRepository
         command.Parameters.AddWithValue("$date", Key(snapshot.Date));
         var current = Convert.ToInt64(command.ExecuteScalar() ?? 0, CultureInfo.InvariantCulture);
         if (current != snapshot.Revision) throw new SaveConflictException();
-        VerifyFreshCalculations(connection, transaction, snapshot);
+        if(restoring is not null)
+        {
+            using var exists=connection.CreateCommand();exists.Transaction=transaction;exists.CommandText="SELECT json FROM deleted_records WHERE id=$id";exists.Parameters.AddWithValue("$id",restoring.Id.ToString());
+            if(exists.ExecuteScalar() as string!=JsonSerializer.Serialize(restoring))throw new SaveConflictException();
+        }
+        VerifyFreshCalculations(connection, transaction, restoring?.Workout is null?snapshot:snapshot with {Workouts=snapshot.Workouts.Where(w=>w.Id!=restoring.Workout.Id).ToArray()});
+        CaptureRemoved(connection,transaction,snapshot with {Review=review});
+        var previousAttachments=ReadAttachmentReferences(connection,transaction,snapshot.Date);
+        var previousFilesById=previousAttachments.ToDictionary(f=>f.Id);
+        foreach (var file in snapshot.Studies.SelectMany(s=>s.Attachments))
+            if (!previousFilesById.TryGetValue(file.Id,out var priorFile) || priorFile!=file) Attachments.Require(file,true);
         command.CommandText = "INSERT INTO days(date,revision) VALUES($date,$revision) ON CONFLICT(date) DO UPDATE SET revision=$revision";
         command.Parameters.AddWithValue("$revision", current + 1);
         command.ExecuteNonQuery();
@@ -209,7 +262,10 @@ public sealed partial class PlanRepository
             insert.Parameters.AddWithValue("$good", review.Good); insert.Parameters.AddWithValue("$difficult", review.Difficult);
             insert.Parameters.AddWithValue("$next", review.NextAction); insert.ExecuteNonQuery();
         }
+        WriteJournal(connection, transaction, snapshot);
+        if(restoring is not null)CompleteDeletedRestore(connection,transaction,restoring);
         transaction.Commit();
+        foreach (var file in previousAttachments.Where(f=>!snapshot.Studies.SelectMany(s=>s.Attachments).Any(a=>a.Id==f.Id))) DiscardAttachmentIfUnused(file);
         return snapshot with { Revision = current + 1, Review = review };
     }
 

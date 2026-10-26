@@ -33,7 +33,7 @@ try
     Check(repository.Load(day).Plans.Count == 0 && !repository.Counts(day, day).ContainsKey(day), "Delete removes calendar counts");
     Check(repository.Counts(next, next).Count == 1 && repository.Counts(day.AddDays(-1), day).Count == 0, "Date range boundaries");
     using (var connection = new SqliteConnection($"Data Source={path};Pooling=False"))
-    { connection.Open(); using var command = connection.CreateCommand(); command.CommandText = "PRAGMA user_version=8"; command.ExecuteNonQuery(); }
+    { connection.Open(); using var command = connection.CreateCommand(); command.CommandText = "PRAGMA user_version=13"; command.ExecuteNonQuery(); }
     Expect<InvalidDataException>(() => new PlanRepository(path), "Unknown newer schema is not overwritten");
     Check(Pds.Desktop.SelectedCalendarColors.Saturday("#E3BACA") == "#1C4C91"
         && Pds.Desktop.SelectedCalendarColors.Contrast("#1C4C91", "#E3BACA") >= 4.5, "Saturday stays readable on selected pink in both themes");
@@ -115,6 +115,12 @@ try
     AnniversaryChecks.Run(directory, Check);
     AnniversaryOriginChecks.Run(directory, Check);
     HolidayChecks.Run(Check);
+    JournalChecks.Run(directory, Check);
+    StudyOverviewChecks.Run(directory, Check);
+    AttachmentChecks.Run(directory, Check);
+    FixedCostChecks.Run(directory, Check);
+    RecordToolsChecks.Run(directory, Check);
+    FeedbackBatchChecks.Run(directory, Check);
     Console.WriteLine($"PASS: {passed} persistence, review, workout, energy, weight, timer, activation and contrast checks.");
 }
 finally
@@ -124,6 +130,7 @@ finally
     var tempRoot = Path.TrimEndingDirectorySeparator(Path.GetFullPath(Path.GetTempPath())) + Path.DirectorySeparatorChar;
     if (!resolved.StartsWith(tempRoot, StringComparison.OrdinalIgnoreCase) || !Path.GetFileName(resolved).StartsWith("PdsChecks-", StringComparison.Ordinal))
         throw new InvalidOperationException("Refusing to clean an unexpected test directory");
+    foreach(var file in Directory.EnumerateFiles(resolved,"*",SearchOption.AllDirectories))File.SetAttributes(file,FileAttributes.Normal);
     Directory.Delete(resolved, recursive: true);
 }
 

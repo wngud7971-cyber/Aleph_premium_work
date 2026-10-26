@@ -13,8 +13,6 @@
   </PropertyGroup>
   <ItemGroup><ProjectReference Include="../Pds.Core/Pds.Core.csproj" /></ItemGroup>
   <ItemGroup>
-    <Resource Include="Fonts/GowunDodum-Regular.ttf" />
     <Resource Include="Assets/Pds.ico" />
-    <None Update="Fonts/OFL.txt" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
   </ItemGroup>
 </Project>

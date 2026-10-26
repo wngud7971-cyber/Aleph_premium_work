@@ -45,27 +45,31 @@ public partial class MainWindow : Window
         snapshot = new(selected, 0, []);
         settings = settingsStore.Load();
         InitializeComponent();
-        InitializeWorkouts(); InitializeMeditation();
+        InitializeWorkouts(); InitializeMeditation(); InitializeJournal();
+        ConfigureSidebarMotion(); ConfigurePageTurn();
         ApplyTheme(); ApplyWindowLayout();
         if (settings.Left is double left && double.IsFinite(left) && settings.Top is double top && double.IsFinite(top))
         {
             WindowStartupLocation = WindowStartupLocation.Manual;
-            Left = Math.Clamp(left, SystemParameters.WorkArea.Left, Math.Max(SystemParameters.WorkArea.Left, SystemParameters.WorkArea.Right - Width));
-            Top = Math.Clamp(top, SystemParameters.WorkArea.Top, Math.Max(SystemParameters.WorkArea.Top, SystemParameters.WorkArea.Bottom - Height));
+            Left = left; Top = top;
         }
         CreateTray();
+        if(!verify)WindowEnvironment.Watch(this,()=>ApplyWindowLayout());
         Loaded += OnLoaded;
         Closing += OnClosing;
         Activated += (_, _) => { if (ready) { if (lastEntryDate != EntryToday) RequestEntryGuidance(); _ = RefreshBodyWeightAsync(); QueueMaintenance(); } };
         SizeChanged += (_, _) => { FitHeader(); FitReminder(); if (ready && WindowState == WindowState.Normal) RememberWindowPosition(); };
         PreviewKeyDown += async (_, e) =>
         {
+            if (busy) { e.Handled = true; return; }
             if (ReminderOverlay.Visibility == Visibility.Visible)
             { if (e.Key == System.Windows.Input.Key.Escape) ClosePlanReminder(); e.Handled = e.Key == System.Windows.Input.Key.Escape || e.Key == System.Windows.Input.Key.S && System.Windows.Input.Keyboard.Modifiers == System.Windows.Input.ModifierKeys.Control; return; }
+            if(recordToolsOpen){if(recordToolsView is not null)await recordToolsView.HandleShortcutAsync(e);return;}
             if (e.Key == System.Windows.Input.Key.S && System.Windows.Input.Keyboard.Modifiers == System.Windows.Input.ModifierKeys.Control)
             { e.Handled = true; await SaveAsync(); }
             if (e.Key == System.Windows.Input.Key.Escape && MeditationCard.Visibility == Visibility.Visible) { CloseMeditation(); e.Handled = true; }
         };
+        PreviewTextInput += (_, e) => { if (busy) e.Handled = true; };
     }
 
     private async void OnLoaded(object sender, RoutedEventArgs e)
@@ -88,21 +92,25 @@ public partial class MainWindow : Window
         catch (Exception ex) { HandleError("앱 준비", ex); if (verify) FinishVerification(ex); }
     }
 
-    private async Task LoadSelectedAsync()
+    private async Task LoadSelectedAsync(Task? beforePresentation=null)
     {
-        busy = true; Body.IsEnabled = false;
+        busy = true; Body.IsHitTestVisible = false; CalmMotion.Settle(Details);
         try
         {
-            snapshot = await Task.Run(() => repository.Load(selected));
+            var date=selected;
+            var loaded = await Task.Run(() => { if(!verify)repository.ApplyFixedCosts(LocalToday);return repository.Load(date); });
+            // Fetch in parallel, but keep editor reconstruction out of the calendar's motion frames.
+            if(beforePresentation is not null)await beforePresentation;
+            snapshot=loaded;
             plans = snapshot.Plans.ToList(); workouts = snapshot.Workouts.ToList(); dirty = false;
-            ClearEditor(); ClearWorkoutEditor(); LoadReview(); DrawPlans(); DrawWorkouts(); DrawSelectedAnniversaries(); DrawSelectedHolidays();
+            ClearEditor(); ClearWorkoutEditor(); LoadReview(); LoadJournal(); DrawPlans(); DrawWorkouts(); DrawSelectedAnniversaries(); DrawSelectedHolidays();
             SelectedNumber.Text = selected.Day.ToString(Korean);
             SelectedYear.Text = selected.ToString("yyyy년 M월", Korean);
             SelectedTitle.Text = selected.ToString("dddd", Korean);
-            WorkoutRecordDate.Text = $"운동 기록일 {selected:yyyy.MM.dd} ({selected.ToString("ddd", Korean)})\n23시 이후에도 이 날짜에 저장돼요. 지난 운동은 해당 날짜를 선택해 주세요.";
+            WorkoutRecordDate.Text = $"{selected:yyyy.MM.dd}의 운동 · 늦게 저장해도 날짜 유지";
             SaveStatus.Text = "선택한 날짜의 기록";
         }
-        finally { busy = false; Body.IsEnabled = true; }
+        finally { busy = false; Body.IsHitTestVisible = true; }
     }
 
     private DateOnly? displayedCalendarMonth;
@@ -145,7 +153,7 @@ public partial class MainWindow : Window
             var date = first.AddDays(i); var isSelected = (Details.Visibility == Visibility.Visible) && date == selected && date.Month == month.Month;
             var holiday = KoreanHolidays.On(date);
             var content = new Grid { ClipToBounds = true };
-            content.RowDefinitions.Add(new RowDefinition { Height = new GridLength(holiday is null ? 26 : 44) });
+            content.RowDefinitions.Add(new RowDefinition { Height = new GridLength(holiday is null ? 24 : 44) });
             content.RowDefinitions.Add(new RowDefinition());
             content.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(22) });
             content.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(3) });
@@ -168,8 +176,15 @@ public partial class MainWindow : Window
                     if (count.Plans == 0) caption = $"운동: {count.Workouts}건";
                 }
             }
+            // Quiet row guides replace a separate gray card around every day.
+            if (date != LocalToday && date.Month == month.Month)
+            {
+                var guide = new Border { BorderBrush = ResourceBrush("Line"), BorderThickness = new Thickness(0, 1, 0, 0),
+                    Margin = new Thickness(0), IsHitTestVisible = false, Visibility = isSelected ? Visibility.Collapsed : Visibility.Visible };
+                Grid.SetRowSpan(guide, 2); Grid.SetColumnSpan(guide, 3); content.Children.Insert(0, guide);
+            }
             AddCalendarLabels(content, specialDays, holiday, caption, isSelected);
-            var button = new Button { Content = content, Style = (Style)FindResource("CalendarDay"), Margin = new Thickness(3), Padding = new Thickness(4), Background = date.Month != month.Month ? Brushes.Transparent : ResourceBrush(isSelected ? "Accent" : "Paper"), ToolTip = date.ToString("yyyy년 M월 d일 dddd", Korean), Tag = date };
+            var button = new Button { Content = content, Style = (Style)FindResource("CalendarDay"), Margin = new Thickness(3), Padding = new Thickness(4), Background = date.Month != month.Month ? Brushes.Transparent : ResourceBrush(isSelected ? "Accent" : date == LocalToday ? "Note" : "Paper"), BorderBrush = isSelected ? ResourceBrush("AccentInk") : date == LocalToday ? ResourceBrush("Accent") : Brushes.Transparent, ToolTip = date.ToString("yyyy년 M월 d일 dddd", Korean), Tag = date };
             if (specialDays is { Length: > 0 }) button.ToolTip += "\n" + string.Join("\n", specialDays.Select(o => $"{o.Entry.DisplayLabel} · {o.Entry.DateLabel}"));
             if (holiday is not null) button.ToolTip += "\n공휴일: " + holiday.Label;
             if (count is not null) button.ToolTip += $"\n계획 {count.Plans} · 완료 {count.Done} · 운동: {count.Workouts}건";
@@ -179,19 +194,35 @@ public partial class MainWindow : Window
         }
         var today = DateOnly.FromDateTime(DateTime.Today);
         var todayCount = counts.TryGetValue(today, out var value) ? value : new DayCount(0, 0);
-        Summary.Text = $"오늘 계획 {todayCount.Plans} · 완료 {todayCount.Done}" + (todayCount.Workouts > 0 ? " · " + WorkoutTimeSummary(todayCount) : "");
+        RefreshDashboard(todayCount);
         FitCalendar();
     }
 
     private async Task SelectDateAsync(DateOnly date)
     {
         if (busy || !await ConfirmPendingAsync()) return;
+        await LoadDateAndOpenAsync(date);
+    }
+
+    private async Task LoadDateAndOpenAsync(DateOnly date)
+    {
         selected = date;
         try
         {
-            await LoadSelectedAsync();
-            DetailColumn.Width = new GridLength(330); Details.Visibility = Visibility.Visible;
-            DrawCalendar();
+            Task<bool>? moving=null;
+            if(Details.Visibility==Visibility.Visible && Math.Abs(DetailColumn.ActualWidth-330)<.1)
+            {
+                UpdateCalendarSelection(true);
+                moving=AnimateSidebarAsync(true);
+            }
+            await LoadSelectedAsync(moving);
+            if(moving is not null)await moving;
+            else
+            {
+                UpdateCalendarSelection(true);
+                await Dispatcher.InvokeAsync(() => { FitCalendar(); UpdateLayout(); }, DispatcherPriority.Loaded);
+                await AnimateSidebarAsync(true);
+            }
         }
         catch (Exception ex) { HandleError("기록 불러오기", ex); }
         PersistSettings();
@@ -235,12 +266,12 @@ public partial class MainWindow : Window
             var history = new Button { Content = "이월 내역", Background = Brushes.Transparent, Padding = new Thickness(6, 3, 6, 3), FontSize = UiTypography.Grow(12) };
             history.Click += async (_, _) => await ShowPlanHistoryAsync(entry.Id); actions.Children.Add(history);
             if (entry.Done) item.Children.Add(new TextBlock { Text = entry.ActualDate is DateOnly actual ? $"실행 {actual:yyyy.MM.dd}" : "실행 날짜 미입력", Foreground = ResourceBrush("Muted") });
-            PlanList.Children.Add(new Border { Background = ResourceBrush("Soft"), CornerRadius = new CornerRadius(8), Padding = new Thickness(10, 7, 10, 5), Margin = new Thickness(0, 0, 0, 8), Child = item });
+            PlanList.Children.Add(new Border { Background = ResourceBrush("Paper"), CornerRadius = new CornerRadius(12), Padding = new Thickness(12, 10, 12, 7), Margin = new Thickness(0, 0, 0, 8), Child = item });
         }
     }
 
     private bool HasInput => !string.IsNullOrWhiteSpace(TitleInput.Text) || !string.IsNullOrWhiteSpace(NoteInput.Text) || TimeEnabled.IsChecked == true || editing is not null;
-    private bool Pending => dirty || HasInput || HasWorkoutInput || HasReviewChanges;
+    private bool Pending => dirty || HasInput || HasWorkoutInput || HasReviewChanges || HasMoneyInput || HasStudyInput;
 
     private void BeginEdit(Guid id)
     {
@@ -249,7 +280,7 @@ public partial class MainWindow : Window
         TitleInput.Text = entry.Title; NoteInput.Text = entry.Note; TimeEnabled.IsChecked = entry.Start is not null;
         StartInput.Text = entry.Start ?? ""; EndInput.Text = entry.End ?? ""; TimeFields.Visibility = entry.Start is null ? Visibility.Collapsed : Visibility.Visible;
         ActualDateFields.Visibility = entry.Done ? Visibility.Visible : Visibility.Collapsed; ActualDateInput.SelectedDate = entry.ActualDate?.ToDateTime(TimeOnly.MinValue);
-        EditorTitle.Text = "계획 수정"; CancelEditButton.Visibility = Visibility.Visible; suppress = false; UpdateDraftStatus(); TitleInput.Focus();
+        EditorTitle.Text = "계획 수정"; CancelEditButton.Visibility = Visibility.Visible; suppress = false; UpdateDraftStatus(); OpenComposer(PlanComposer, TitleInput);
     }
 
     private void ClearEditor()
@@ -257,6 +288,7 @@ public partial class MainWindow : Window
         suppress = true; editing = null; TitleInput.Clear(); NoteInput.Clear(); StartInput.Clear(); EndInput.Clear(); TimeEnabled.IsChecked = false;
         TimeFields.Visibility = Visibility.Collapsed; EditorTitle.Text = "새 계획"; CancelEditButton.Visibility = Visibility.Collapsed; suppress = false;
         ActualDateFields.Visibility = Visibility.Collapsed; ActualDateInput.SelectedDate = null;
+        if (PlanComposer is not null) PlanComposer.IsExpanded = false;
     }
 
     private async Task<bool> SaveAsync()
@@ -274,11 +306,12 @@ public partial class MainWindow : Window
             }
             var workoutCandidate = WorkoutCandidates();
             var reviewCandidate = ReviewCandidate();
+            var moneyCandidate = MoneyCandidates(); var studyCandidate = StudyCandidates();
             if (snapshot.Review is not null && reviewCandidate is null && AskReviewRemoval() != MessageBoxResult.Yes)
             { SaveStatus.Text = "회고 삭제를 취소했어요. 입력은 유지돼요."; return false; }
             busy = true; Body.IsEnabled = false; SaveStatus.Text = "저장 중…";
-            var saved = await Task.Run(() => repository.Save(snapshot with { Plans = candidate, Workouts = workoutCandidate, Review = reviewCandidate }));
-            snapshot = saved; plans = saved.Plans.ToList(); workouts = saved.Workouts.ToList(); dirty = false; ClearEditor(); ClearWorkoutEditor(); LoadReview(); DrawPlans(); DrawWorkouts();
+            var saved = await Task.Run(() => repository.Save(snapshot with { Plans = candidate, Workouts = workoutCandidate, Review = reviewCandidate, Money = moneyCandidate, Studies = studyCandidate }));
+            snapshot = saved; plans = saved.Plans.ToList(); workouts = saved.Workouts.ToList(); dirty = false; ClearEditor(); ClearWorkoutEditor(); LoadReview(); LoadJournal(); DrawPlans(); DrawWorkouts();
             await RefreshCalendarAsync(); SaveStatus.Text = "저장 완료"; Status.Text = $"{selected:yyyy.MM.dd}의 기록을 저장했어요."; return true;
         }
         catch (Exception ex) { HandleError("저장", ex); SaveStatus.Text = "저장하지 못했어요. 입력은 유지돼요."; return false; }
@@ -287,42 +320,59 @@ public partial class MainWindow : Window
 
     private async Task<bool> ConfirmPendingAsync()
     {
+        if(recordToolsOpen && recordToolsView?.TryLeave()!=true)return false;
         if (!Pending) return true;
         var result = AskPendingChanges();
         if (result == MessageBoxResult.Cancel) return false;
         if (result == MessageBoxResult.Yes) return await SaveAsync();
-        plans = snapshot.Plans.ToList(); workouts = snapshot.Workouts.ToList(); dirty = false; ClearEditor(); ClearWorkoutEditor(); LoadReview(); DrawPlans(); DrawWorkouts(); return true;
+        plans = snapshot.Plans.ToList(); workouts = snapshot.Workouts.ToList(); dirty = false; ClearEditor(); ClearWorkoutEditor(); LoadReview(); LoadJournal(); DrawPlans(); DrawWorkouts(); return true;
     }
 
     private void MarkDirty() { if (!suppress && ready) { dirty = true; SaveStatus.Text = "저장하지 않은 변경"; } }
-    private void UpdateDraftStatus() { if (!suppress && ready) SaveStatus.Text = Pending ? "저장하지 않은 변경" : "선택한 날짜의 기록"; }
-    private void Editor_Changed(object sender, TextChangedEventArgs e) { if (IsInitialized) { UpdateDraftStatus(); RefreshEnergyPreview(); } }
+    private void UpdateDraftStatus()
+    {
+        if(suppress || !ready)return;
+        SaveStatus.Text = Pending ? "저장하지 않은 변경" : "선택한 날짜의 기록";
+        if(!Pending && fixedCostDeferred)QueueMaintenance();
+    }
+    private void Editor_Changed(object sender, TextChangedEventArgs e) { if (IsInitialized) { ExpandComposerForDraft(sender); UpdateDraftStatus(); RefreshEnergyPreview(); } }
     private void Time_Changed(object sender, RoutedEventArgs e) { if (TimeFields is null) return; TimeFields.Visibility = TimeEnabled.IsChecked == true ? Visibility.Visible : Visibility.Collapsed; UpdateDraftStatus(); }
     private void CancelEdit_Click(object sender, RoutedEventArgs e) { ClearEditor(); UpdateDraftStatus(); }
     private async void Save_Click(object sender, RoutedEventArgs e) => await SaveAsync();
-    private void Calendar_Click(object sender, RoutedEventArgs e) { if (busy) return; if (statisticsOpen) CloseStatistics(); CalendarViewport.Focus(); }
+    private async void Calendar_Click(object sender, RoutedEventArgs e) { if (busy) return; if(recordToolsOpen && !await CloseRecordToolsAsync())return; if (statisticsOpen) await CloseStatisticsAnimatedAsync(); CalendarViewport.Focus(); }
     private void Meditation_Click(object sender, RoutedEventArgs e) { if (MeditationCard.Visibility == Visibility.Visible) CloseMeditation(); else OpenMeditation(); }
     private async void Previous_Click(object sender, RoutedEventArgs e) => await ShiftMonthAsync(-1);
     private async void Next_Click(object sender, RoutedEventArgs e) => await ShiftMonthAsync(1);
-    private async Task ShiftMonthAsync(int offset) { if (busy) return; try { month = month.AddMonths(offset); await RefreshCalendarAsync(); } catch (Exception ex) { HandleError("월 이동", ex); } }
+    private async Task ShiftMonthAsync(int offset) { if (busy) return; try { month = month.AddMonths(offset); await RefreshCalendarAsync(); CalmMotion.Reveal(MonthGrid, CalmMotion.TabMs); } catch (Exception ex) { HandleError("월 이동", ex); } }
     private async void Today_Click(object sender, RoutedEventArgs e) => await ShowTodayAsync();
     private async Task ShowTodayAsync()
     {
         if (busy || !await ConfirmPendingAsync()) return;
-        var today = LocalToday; await SelectDateAsync(today); month = new(today.Year, today.Month, 1);
-        try { await RefreshCalendarAsync(); } catch (Exception ex) { HandleError("오늘 보기", ex); }
+        if(recordToolsOpen && !await CloseRecordToolsAsync())return;
+        if(statisticsOpen)await CloseStatisticsAnimatedAsync();
+        var today = LocalToday; var targetMonth = new DateOnly(today.Year, today.Month, 1);
+        if (month != targetMonth || displayedCalendarMonth != targetMonth)
+        {
+            var oldMonth = month; month = targetMonth;
+            try { await RefreshCalendarAsync(); }
+            catch (Exception ex) { month = oldMonth; HandleError("오늘 보기", ex); return; }
+        }
+        // Avoid rebuilding the calendar after the slide has finished, and confirm drafts only once.
+        await LoadDateAndOpenAsync(today);
     }
-    private async void CloseDetails_Click(object sender, RoutedEventArgs e) { if (busy || !await ConfirmPendingAsync()) return; DetailColumn.Width = new GridLength(0); Details.Visibility = Visibility.Collapsed; DrawCalendar(); }
+    private async void CloseDetails_Click(object sender, RoutedEventArgs e) { if (busy || !await ConfirmPendingAsync()) return; await CloseDetailsAnimatedAsync(); }
     private const double FixedWindowWidth = 900, FixedWindowHeight = 880;
+    internal bool VerificationMode=>verify;
     private void ApplyWindowLayout(bool openDetails = false)
     {
+        CancelSidebarMotion(true);
         applyingMode = true;
         try
         {
             using var noReentry = Dispatcher.DisableProcessing();
             // Keep old preference fields readable, but never restore the removed compact mode or pin.
             settings.Compact = false; settings.Pinned = false; Topmost = false;
-            var area = SystemParameters.WorkArea;
+            var area = WindowEnvironment.WorkArea(this);
             var size = FixedWindowSize(area.Width, area.Height);
             MinWidth = MinHeight = 0; MaxWidth = MaxHeight = double.PositiveInfinity;
             Width = size.Width; Height = size.Height;
@@ -354,19 +404,20 @@ public partial class MainWindow : Window
     private void Calendar_SizeChanged(object sender, SizeChangedEventArgs e) => QueueCalendarFit();
     private void Calendar_ScrollChanged(object sender, ScrollChangedEventArgs e)
     {
-        WeekDays.RenderTransform = new TranslateTransform(-e.HorizontalOffset, 0);
+        SynchronizeWeekdays();
     }
     private void QueueCalendarFit()
     {
+        if(sidebarPanActive && !datePanActive){SynchronizeWeekdays();return;}
         if (fitQueued || applyingMode) return;
         fitQueued = true;
-        Dispatcher.BeginInvoke(DispatcherPriority.Render, () => { fitQueued = false; FitCalendar(); });
+        Dispatcher.BeginInvoke(DispatcherPriority.Render, () => { fitQueued = false; if(!sidebarPanActive || datePanActive)FitCalendar(); });
     }
     private void FitCalendar()
     {
         if (CalendarViewport is null || CalendarViewport.ActualWidth < 1) return;
         // Reserve horizontal scrollbar space consistently; all week rows must fit vertically.
-        var available = Math.Max(1, CalendarViewport.ActualWidth - 1);
+        var available = Math.Max(1, CalendarViewport.ActualWidth + DetailColumn.ActualWidth - 1);
         var availableHeight = Math.Max(1, CalendarViewport.ActualHeight - SystemParameters.HorizontalScrollBarHeight - 1);
         var dpi = VisualTreeHelper.GetDpi(MonthGrid);
         var metrics = CalendarCellMetrics(available, availableHeight, weeks, dpi.DpiScaleX, dpi.DpiScaleY);
@@ -378,7 +429,9 @@ public partial class MainWindow : Window
             cell.HorizontalAlignment = HorizontalAlignment.Left; cell.VerticalAlignment = VerticalAlignment.Top;
             cell.ClipToBounds = true;
         }
-        WeekDays.RenderTransform = new TranslateTransform(-CalendarViewport.HorizontalOffset, 0);
+        SynchronizeWeekdays();
+        // Reserve this row even when the hint is unnecessary so sliding never changes cell height.
+        CalendarScrollHint.Visibility = MonthGrid.Width > CalendarViewport.ActualWidth + 1 ? Visibility.Visible : Visibility.Hidden;
         MeditationCard.MaxWidth = Math.Max(160, CalendarArea.ActualWidth - 24);
         var height = Math.Max(MeditationCard.MinHeight, MeditationCard.ActualHeight);
         var headingBottom = CalendarViewport.TranslatePoint(new Point(0, 0), CalendarArea).Y;
@@ -399,7 +452,7 @@ public partial class MainWindow : Window
     private void Theme_Click(object sender, RoutedEventArgs e) { settings.Dark = !settings.Dark; ApplyTheme(); DrawCalendar(); DrawPlans(); DrawWorkouts(); DrawStatistics(); PersistSettings(); }
     private void ApplyTheme()
     {
-        var palette = settings.Dark ? new[] { "#222126", "#F5F1F5", "#C2B6CB", "#443D4A", "#302C33", "#FF9BB0", "#A5BFFF", "#1D1A20" } : new[] { "#FFFFFF", "#211F25", "#605B66", "#E5E1E8", "#F6F4F6", "#C93656", "#396AB8", "#F1EFF2" };
+        var palette = settings.Dark ? new[] { "#22222B", "#F5F4FA", "#C0BDCB", "#3D3B49", "#2A2A35", "#FFACC0", "#AAC7FF", "#18181F" } : new[] { "#FFFFFF", "#292831", "#666371", "#E7E5ED", "#F3F3F7", "#BE2F50", "#315FA5", "#F7F7FA" };
         var keys = new[] { "Paper", "Ink", "Muted", "Line", "Soft", "Sunday", "Saturday", "Canvas" };
         for (var i = 0; i < keys.Length; i++) SetBrush(keys[i], palette[i]);
         Color accent;
@@ -409,10 +462,14 @@ public partial class MainWindow : Window
         SetBrush("SelectedSaturday", SelectedCalendarColors.Saturday(accentHex));
         SetBrush("SelectedSunday", SelectedCalendarColors.Sunday(accentHex));
         SetBrush("AccentInk", SelectedCalendarColors.Ink(accentHex));
-        var noteBase = (Color)ColorConverter.ConvertFromString(settings.Dark ? "#1D1A20" : "#FFFFFF");
-        var ratio = settings.Dark ? 0.13 : 0.35;
+        var noteBase = (Color)ColorConverter.ConvertFromString(settings.Dark ? "#18181F" : "#FFFFFF");
+        var ratio = settings.Dark ? 0.10 : 0.22;
         Resources["Note"] = new SolidColorBrush(Color.FromRgb((byte)Math.Round(accent.R * ratio + noteBase.R * (1 - ratio)), (byte)Math.Round(accent.G * ratio + noteBase.G * (1 - ratio)), (byte)Math.Round(accent.B * ratio + noteBase.B * (1 - ratio))));
         ThemeButton.Content = settings.Dark ? "라이트 모드" : "다크 모드";
+        recordToolsView?.RefreshTheme();
+        RefreshNavigationVisuals(); CalmMotion.RefreshShadows(this);
+        if (MoneyList is not null) DrawJournal();
+        if (StudyAttachmentDraftList is not null) DrawStudyAttachmentDraft();
     }
     private void SetBrush(string key, string color) => Resources[key] = new SolidColorBrush((Color)ColorConverter.ConvertFromString(color));
     private Brush ResourceBrush(string key) => (Brush)FindResource(key);
@@ -420,7 +477,7 @@ public partial class MainWindow : Window
     private void ShowMeditationIfNeeded()
     {
         var today = EntryToday.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture);
-        if (!settings.MeditationEnabled || settings.MeditationDate == today || settings.MeditationShownDates.Contains(today) || !IsVisible || statisticsOpen) return;
+        if (!settings.MeditationEnabled || settings.MeditationDate == today || settings.MeditationShownDates.Contains(today) || !IsVisible || statisticsOpen || recordToolsOpen) return;
         OpenMeditation(); settings.MeditationDate = today; settings.MeditationShownDates.Add(today); PersistSettings();
     }
     private void DismissMeditation_Click(object sender, RoutedEventArgs e) => CloseMeditation();
@@ -429,6 +486,7 @@ public partial class MainWindow : Window
         if (busy) return;
         var dialog = new Window { Owner = this, Title = "설정", Width = 430, Height = Math.Min(570, SystemParameters.WorkArea.Height), ResizeMode = ResizeMode.NoResize, WindowStartupLocation = WindowStartupLocation.CenterOwner };
         foreach (var key in new[] { "Paper", "Ink", "Muted", "Line", "Soft", "Accent", "AccentInk" }) dialog.Resources[key] = FindResource(key);
+        WindowEnvironment.Watch(dialog);
         var content = new StackPanel { Margin = new Thickness(22) };
         var meditation = new CheckBox { Content = "하루 첫 사용 시 5분 명상 안내", IsChecked = settings.MeditationEnabled };
         meditation.Click += (_, _) => { settings.MeditationEnabled = meditation.IsChecked == true; if (!settings.MeditationEnabled) CloseMeditation(); PersistSettings(); };
@@ -457,10 +515,14 @@ public partial class MainWindow : Window
         var restore = new Button { Content = "백업 파일로 복원", HorizontalAlignment = HorizontalAlignment.Left };
         restore.Click += async (_, _) => { dialog.Close(); await RestoreBackupAsync(); };
         content.Children.Add(meditation); content.Children.Add(autoStart); content.Children.Add(startupStatus); content.Children.Add(color); content.Children.Add(reset); content.Children.Add(weightStatus); content.Children.Add(weight);
+        content.Children.Add(new TextBlock { Text = SystemParameters.ClientAreaAnimation ? "부드러운 전환 켜짐 · Windows 설정을 따라요." : "부드러운 전환 꺼짐 · Windows 설정을 따라요.",
+            Foreground = ResourceBrush("Muted"), TextWrapping = TextWrapping.Wrap, Margin = new Thickness(0, 10, 0, 0),
+            ToolTip = "Windows 설정 → 접근성 → 시각 효과 → 애니메이션 효과에서 변경할 수 있어요." });
         content.Children.Add(new TextBlock { Text = "한국 공휴일: 2025~2027년 자료 포함 · 2026.10.17 확인. 새 임시공휴일·다음 연도는 자료 업데이트가 필요해요.", TextWrapping = TextWrapping.Wrap, Margin = new Thickness(0, 10, 0, 0) });
-        content.Children.Add(new TextBlock { Text = "개인 기록: " + repository.DatabasePath + "\n백업 형식: PDS v3 · 데이터 형식: 7", TextWrapping = TextWrapping.Wrap, Foreground = ResourceBrush("Muted"), Margin = new Thickness(0, 10, 0, 0) });
+        content.Children.Add(new TextBlock { Text = "개인 기록: " + repository.DatabasePath + "\n백업 형식: PDS v8 · 학습 시간·휴지통 첨부 포함 · 데이터 형식: 12", TextWrapping = TextWrapping.Wrap, Foreground = ResourceBrush("Muted"), Margin = new Thickness(0, 10, 0, 0) });
         content.Children.Add(new TextBlock { Text = "수동 백업 · 내보내도 기록은 유지돼요.\n복원은 확인 후 현재 기록 전체를 교체해요.", TextWrapping = TextWrapping.Wrap, Margin = new Thickness(0, 18, 0, 8) });
-        content.Children.Add(export); content.Children.Add(restore); content.Children.Add(close); dialog.Content = new ScrollViewer { Content = content, VerticalScrollBarVisibility = ScrollBarVisibility.Auto }; dialog.ShowDialog();
+        content.Children.Add(export); content.Children.Add(restore); content.Children.Add(close); dialog.Content = new ScrollViewer { Content = content, VerticalScrollBarVisibility = ScrollBarVisibility.Auto };
+        dialog.Loaded += (_, _) => CalmMotion.Reveal((FrameworkElement)dialog.Content, CalmMotion.DialogMs); dialog.ShowDialog();
     }
 
     private void CreateTray()
@@ -474,6 +536,8 @@ public partial class MainWindow : Window
         Icon = BitmapFrame.Create(uri);
         tray = new NativeTrayIcon(icon, verifyTray || verifyEndurance ? "PDS 검사 · 임시 아이콘" : "PDS · 클릭하면 열기", repository.DatabasePath);
         var menu = new System.Windows.Forms.ContextMenuStrip();
+        var menuFont = new System.Drawing.Font("Malgun Gothic", 11);
+        menu.Font = menuFont; menu.Disposed += (_, _) => menuFont.Dispose();
         menu.Items.Add("앱 열기", null, (_, _) => Dispatcher.Invoke(RestoreWindow));
         menu.Items.Add("오늘 보기", null, (_, _) => Dispatcher.Invoke(() => { RestoreWindow(); Today_Click(this, new RoutedEventArgs()); }));
         menu.Items.Add(new System.Windows.Forms.ToolStripSeparator());
@@ -490,7 +554,7 @@ public partial class MainWindow : Window
     {
         if (exiting) return;
         e.Cancel = true;
-        if (busy) { Status.Text = "기록 처리가 끝난 뒤 닫아 주세요."; return; }
+        if (busy || recordToolsView?.IsBusy==true) { Status.Text = "기록 처리가 끝난 뒤 닫아 주세요."; return; }
         RememberWindowPosition(); PersistSettings();
         var registered = verify && !verifyTray && !verifyEndurance || tray?.TryEnsureRegistered() == true;
         if (verify && trayAvailabilityOverride is bool available) registered = available;
@@ -620,8 +684,8 @@ public partial class MainWindow : Window
     private async Task VerifyPresentationAsync()
     {
         var face = new Typeface(FontFamily, FontStyles.Normal, FontWeights.Normal, FontStretches.Normal);
-        if (!face.TryGetGlyphTypeface(out var glyphs) || !glyphs.FontUri.ToString().Contains("GowunDodum", StringComparison.OrdinalIgnoreCase))
-            throw new InvalidOperationException($"Bundled Korean font did not resolve: family={FontFamily.Source}, resolved={glyphs?.FontUri}");
+        if (!face.TryGetGlyphTypeface(out var glyphs) || !glyphs.FontUri.ToString().Contains("malgun", StringComparison.OrdinalIgnoreCase))
+            throw new InvalidOperationException($"Malgun Gothic did not resolve: family={FontFamily.Source}, resolved={glyphs?.FontUri}");
         var originalMonth = month;
         var samples = new List<object>();
         foreach (var details in new[] { false, true })
@@ -653,7 +717,7 @@ public partial class MainWindow : Window
         }
         settings.Dark = false; ApplyTheme(); month = originalMonth; await RefreshCalendarAsync();
         ApplyWindowLayout(openDetails: true);
-        File.WriteAllText(Path.Combine(Path.GetDirectoryName(repository.DatabasePath)!, "presentation.json"), JsonSerializer.Serialize(new { embeddedFont = glyphs.FontUri.ToString(), accent = settings.Accent, bodySize = FontSize, displayFont = MonthTitle.FontFamily.Source, samples }, new JsonSerializerOptions { WriteIndented = true }));
+        File.WriteAllText(Path.Combine(Path.GetDirectoryName(repository.DatabasePath)!, "presentation.json"), JsonSerializer.Serialize(new { resolvedFont = glyphs.FontUri.ToString(), accent = settings.Accent, bodySize = FontSize, displayFont = MonthTitle.FontFamily.Source, samples }, new JsonSerializerOptions { WriteIndented = true }));
     }
 
     private void CheckSquares()
@@ -675,7 +739,7 @@ public partial class MainWindow : Window
     }
     private void Capture(string name)
     {
-        UpdateLayout();
+        CalmMotion.Settle(this); UpdateLayout();
         var content = (FrameworkElement)Content;
         var target = new RenderTargetBitmap((int)Math.Ceiling(content.ActualWidth), (int)Math.Ceiling(content.ActualHeight), 96, 96, PixelFormats.Pbgra32);
         var background = new DrawingVisual();

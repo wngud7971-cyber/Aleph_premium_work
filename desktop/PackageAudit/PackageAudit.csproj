@@ -1,0 +1,10 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net10.0-windows</TargetFramework><OutputType>WinExe</OutputType><UseWPF>true</UseWPF>
+  </PropertyGroup>
+  <ItemGroup>
+    <Reference Include="Pds.Core"><HintPath>$(AuditBundlePath)/PDS/Pds.Core.dll</HintPath></Reference>
+    <Reference Include="Pds.Desktop"><HintPath>$(AuditBundlePath)/PDS/Pds.Desktop.dll</HintPath></Reference>
+    <PackageReference Include="Microsoft.Data.Sqlite" Version="10.0.13"/>
+  </ItemGroup>
+</Project>

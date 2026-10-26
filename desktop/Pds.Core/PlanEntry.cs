@@ -27,6 +27,8 @@ public sealed record DaySnapshot(DateOnly Date, long Revision, IReadOnlyList<Pla
 {
     public IReadOnlyList<WorkoutEntry> Workouts { get; init; } = [];
     public DayReview? Review { get; init; }
+    public IReadOnlyList<MoneyEntry> Money { get; init; } = [];
+    public IReadOnlyList<StudyEntry> Studies { get; init; } = [];
 }
 public sealed record DayCount(int Plans, int Done)
 {

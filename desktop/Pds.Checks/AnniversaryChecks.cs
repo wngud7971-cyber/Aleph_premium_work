@@ -40,7 +40,7 @@ static class AnniversaryChecks
         repository.Rollover(new DateTimeOffset(2026, 10, 17, 23, 59, 0, TimeSpan.FromHours(9)));
         check(repository.LoadAnniversaries().Count == 3 && repository.Statistics(DateRange.Week(day)).Plans == 1, "Anniversaries stay fixed at 23:59 and never inflate plan statistics");
         var backup = repository.CreateBackup(); var json = BackupFile.Serialize(backup);
-        check(backup.Version == 3 && backup.Anniversaries.Count == 3 && repository.LoadAnniversaries().Count == 3, "Backup v3 exports recurring rules and leaves originals intact");
+        check(backup.Version == 8 && backup.Anniversaries.Count == 3 && repository.LoadAnniversaries().Count == 3, "Backup v4 exports recurring rules and leaves originals intact");
         var restored = new PlanRepository(Path.Combine(directory, "anniversary-restore.db")); restored.RestoreBackup(BackupFile.Parse(json));
         check(restored.LoadAnniversaries().Select(a => a with { Revision = 0 }).SequenceEqual(repository.LoadAnniversaries().Select(a => a with { Revision = 0 })), "Full restore preserves original calendar leap policies IDs and notes");
         var before = restored.LoadAnniversaries().First(); restored.RestoreBackup(BackupFile.Parse(json));

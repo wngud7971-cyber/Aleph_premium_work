@@ -41,6 +41,7 @@ public sealed class AnniversaryWindow : Window
     {
         this.repository = repository; this.anchor = anchor; Owner = owner;
         Style = (Style)owner.FindResource(typeof(Window));
+        WindowEnvironment.Watch(this);
         Title = "생일·기일·기념일"; Width = Math.Min(560, SystemParameters.WorkArea.Width);
         Height = Math.Min(740, SystemParameters.WorkArea.Height);
         MinWidth = Math.Min(440, Width); MinHeight = Math.Min(480, Height);
@@ -80,6 +81,7 @@ public sealed class AnniversaryWindow : Window
         EntryYear.TextChanged += (_, _) => RefreshPreview();
         EntryName.TextChanged += (_, _) => RefreshPreview(); Leap.Checked += (_, _) => RefreshPreview(); Leap.Unchecked += (_, _) => RefreshPreview();
         ResetEditor(); DrawSaved(); Closing += OnClosing;
+        Loaded += (_, _) => CalmMotion.Reveal(root, CalmMotion.DialogMs);
         PreviewKeyDown += (_, e) => { if (e.Key == System.Windows.Input.Key.Escape) { e.Handled = true; Close(); } };
     }
     private string EditorKey() => string.Join("|", EntryName.Text, EntryYear.Text, EntryNote.Text, RecurringCalendar.SelectedIndex, OriginLeap.SelectedIndex, Kind.SelectedIndex, Calendar.SelectedIndex, Month.SelectedItem, Day.SelectedItem, Leap.IsChecked, LeapPolicy.SelectedIndex, DayPolicy.SelectedIndex);

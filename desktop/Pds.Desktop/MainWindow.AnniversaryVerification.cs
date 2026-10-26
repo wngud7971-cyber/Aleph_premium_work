@@ -129,7 +129,7 @@ public partial class MainWindow
     }
     private void CaptureDialog(Window window, string name)
     {
-        window.UpdateLayout();
+        CalmMotion.Settle(window); window.UpdateLayout();
         var target = new RenderTargetBitmap((int)Math.Ceiling(window.ActualWidth), (int)Math.Ceiling(window.ActualHeight), 96, 96, PixelFormats.Pbgra32);
         var background = new DrawingVisual();
         using (var drawing = background.RenderOpen()) drawing.DrawRectangle(ResourceBrush("Paper"), null, new Rect(0, 0, window.ActualWidth, window.ActualHeight));
@@ -150,7 +150,7 @@ public partial class MainWindow
             "legacy-preferences-keep-theme-and-drop-compact-pin");
         Check(Math.Abs(width - size.Width) < 1 && Math.Abs(height - size.Height) < 1 && ResizeMode == ResizeMode.CanMinimize
             && MinWidth == MaxWidth && MinHeight == MaxHeight, "fixed-size-and-resize-maximize-disabled");
-        Check(TopActions.Children.OfType<System.Windows.Controls.Button>().Count() == 1,
+        Check(TopActions.Children.OfType<System.Windows.Controls.Button>().SequenceEqual(new[] { ThemeButton, SettingsButton }),
             "compact-and-pin-controls-removed-from-header");
         Width = width + 100; Height = height + 100;
         await Dispatcher.InvokeAsync(() => { }, DispatcherPriority.ApplicationIdle);

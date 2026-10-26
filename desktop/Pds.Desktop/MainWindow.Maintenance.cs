@@ -9,7 +9,7 @@ namespace Pds.Desktop;
 public partial class MainWindow
 {
     private readonly DispatcherTimer maintenanceTimer = new(DispatcherPriority.Background);
-    private bool maintenanceStarted, refreshOnRestore;
+    private bool maintenanceStarted, refreshOnRestore, fixedCostDeferred;
     private string DescribeStartupRegistration()
     {
         if (!allowSystemStartup) return "별도 데이터로 시험 중이에요. 시작 프로그램은 변경하지 않아요.";
@@ -59,17 +59,20 @@ public partial class MainWindow
         RolloverResult? result;
         try
         {
+            var fixedCosts=await Task.Run(()=>repository.ApplyFixedCosts(DateOnly.FromDateTime((testNow ?? DateTimeOffset.Now).LocalDateTime),protectedDates));
+            fixedCostDeferred=fixedCosts.Deferred>0;
             result = await Task.Run(() => repository.Rollover(testNow ?? DateTimeOffset.Now, protectedDates));
-            if (!pending && (result.Moved > 0 || refreshOnRestore))
+            if (!pending && (fixedCosts.Added>0 || result.Moved > 0 || refreshOnRestore))
             {
                 snapshot = await Task.Run(() => repository.Load(selected)); plans = snapshot.Plans.ToList(); workouts = snapshot.Workouts.ToList(); dirty = false;
-                ClearEditor(); ClearWorkoutEditor(); LoadReview();
+                ClearEditor(); ClearWorkoutEditor(); LoadReview(); LoadJournal();
             }
             if (IsVisible && WindowState != WindowState.Minimized)
             {
                 DrawPlans(); DrawWorkouts(); await RefreshCalendarAsync(); refreshOnRestore = false;
             }
             else refreshOnRestore = true;
+            if(fixedCosts.Added>0)Status.Text=$"매월 고정 지출 {fixedCosts.Added}건을 지정일에 반영했어요.";
             if (result.Moved > 0 || result.Deferred > 0)
                 Status.Text = $"23시 이월 {result.Moved}건" + (result.Deferred > 0 ? $" · 입력 보호로 {result.Deferred}건 보류 중" : " · 시간 지정은 해제했어요.");
         }

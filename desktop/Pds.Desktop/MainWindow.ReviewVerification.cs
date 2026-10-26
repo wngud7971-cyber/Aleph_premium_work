@@ -11,7 +11,8 @@ public partial class MainWindow
     private async Task VerifyReviewFeaturesAsync(List<string> checks, Action<string> selectExercise)
     {
         void Check(bool condition, string label) { if (!condition) throw new InvalidOperationException(label); checks.Add(label); }
-        var day = LocalToday.AddDays(-3);
+        // Isolate this persistent fixture from the calendar holiday fixtures, independent of today.
+        var day = new DateOnly(2026, 4, 14);
         try
         {
             await SelectDateAsync(day); SelectRecordTab("review");
@@ -68,6 +69,7 @@ public partial class MainWindow
                 settings.Dark = dark; ApplyTheme(); DrawPlans(); DrawWorkouts(); DrawCalendar();
                 ApplyWindowLayout(openDetails: true);
                 await Dispatcher.InvokeAsync(() => { }, DispatcherPriority.ApplicationIdle);
+                ReviewComposer.IsExpanded = true;
                 ReviewNextAction.BringIntoView();
                 await Dispatcher.InvokeAsync(() => { }, DispatcherPriority.ApplicationIdle);
                 var fieldTop = ReviewNextAction.TranslatePoint(new Point(), ReviewPane).Y;
@@ -109,6 +111,10 @@ public partial class MainWindow
             }
             File.WriteAllText(Path.Combine(folder, "review-reopen.json"), JsonSerializer.Serialize(new {
                 success = true, reviewRestoredInNewProcess = true, reviewFieldsRestored = true, plansAndWorkoutsPreserved = true, personalDataUsed = false }));
+            await VerifyJournalReopenAsync(folder);
+            await VerifyAttachmentReopenAsync(folder);
+            await VerifyFixedCostReopenAsync(folder);
+            await VerifyRecordToolsReopenAsync(folder);
             FinishVerification(null);
         }
         catch (Exception ex) { FinishVerification(ex); }

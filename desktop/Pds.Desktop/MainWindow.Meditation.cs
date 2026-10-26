@@ -20,7 +20,7 @@ public partial class MainWindow
     private void OpenMeditation()
     {
         MeditationCard.Visibility = Visibility.Visible;
-        RefreshMeditation(); QueueCalendarFit();
+        RefreshMeditation(); QueueCalendarFit(); CalmMotion.Reveal(MeditationCard, CalmMotion.DialogMs);
     }
     private void CloseMeditation()
     {
@@ -54,6 +54,7 @@ public partial class MainWindow
     protected override void OnStateChanged(EventArgs e)
     {
         base.OnStateChanged(e);
+        if (WindowState == WindowState.Minimized) CalmMotion.Settle(this);
         if (MeditationCard is not null) RefreshMeditation();
     }
 }

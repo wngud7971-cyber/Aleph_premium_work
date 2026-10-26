@@ -20,12 +20,15 @@ public partial class MainWindow
             ReviewDifficult.Text = snapshot.Review?.Difficult ?? "";
             ReviewNextAction.Text = snapshot.Review?.NextAction ?? "";
             UpdateReviewState();
+            if (ReviewComposer is not null) ReviewComposer.IsExpanded = false;
+            UpdateReviewPreview();
         }
         finally { suppress = wasSuppressed; }
     }
     private void Review_Changed(object sender, TextChangedEventArgs e)
     {
         if (!IsInitialized || ReviewNextAction is null) return;
+        if (!suppress && HasReviewChanges) ReviewComposer.IsExpanded = true;
         UpdateReviewState(); UpdateDraftStatus();
     }
     private void UpdateReviewState()

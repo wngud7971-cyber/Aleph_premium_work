@@ -21,12 +21,12 @@ public partial class MainWindow
         if (holiday is not null)
         {
             var normal = holiday.Names.Count > 1 ? $"{holiday.Names[0]} 외 {holiday.Names.Count - 1}" : holiday.Label;
-            if (normal.StartsWith("대체공휴일")) normal = "대체공휴일";
+            if (normal.StartsWith("대체공휴일")) normal = "대체";
             normal = normal.Replace("설날 연휴", "설날").Replace("추석 연휴", "추석")
                 .Replace("전국동시지방선거", "지방선거").Replace("제21대 대통령선거", "대통령선거");
-            var compact = holiday.Names.Count > 1 ? holiday.Names[0] + $"\n외 {holiday.Names.Count - 1}" : normal switch
+            var compact = normal == "대체" ? normal : holiday.Names.Count > 1 ? holiday.Names[0] + $"\n외 {holiday.Names.Count - 1}" : normal switch
             {
-                "대체공휴일" => "대체\n공휴일", "부처님오신날" => "부처님\n오신날",
+                "부처님오신날" => "부처님\n오신날",
                 "대통령선거" => "대통령\n선거", "임시공휴일" => "임시\n공휴일", _ => normal
             };
             var holidayLabel = new TextBlock { Text = normal, FontFamily = FontFamily, FontSize = UiTypography.Date, TextWrapping = TextWrapping.Wrap,
@@ -39,6 +39,9 @@ public partial class MainWindow
                 holidayLabel.TextWrapping = TextWrapping.NoWrap; holidayLabel.TextTrimming = TextTrimming.CharacterEllipsis;
             }
             var dateNumber = content.Children.OfType<TextBlock>().First();
+            // Size the date slot to this numeral rather than reserving two digits for every holiday.
+            content.ColumnDefinitions[0].Width = new GridLength(UiPixels.CeilingX(dateNumber, CalendarTextWidth(dateNumber, dateNumber.Text)));
+            content.ColumnDefinitions[1].Width = new GridLength(UiPixels.CeilingX(dateNumber, 4));
             Rect Ink(TextBlock label, string text) => CalendarFormattedText(label, text).BuildGeometry(new Point()).Bounds;
             var dateInk = Ink(dateNumber, dateNumber.Text);
             var holidayInk = Ink(holidayLabel, normal);
@@ -59,6 +62,18 @@ public partial class MainWindow
                 if (holidayLabel.ActualWidth > 0)
                 {
                     var text = hasOccasions || CalendarTextWidth(holidayLabel, normal) <= holidayLabel.ActualWidth ? normal : compact;
+                    if (!hasOccasions)
+                    {
+                        // Keep the enlarged caption within its two-line header; the full name remains in the tooltip.
+                        text = string.Join("\n", text.Split('\n').Select(line =>
+                        {
+                            if (CalendarTextWidth(holidayLabel, line) <= holidayLabel.ActualWidth) return line;
+                            var shortened = line;
+                            while (shortened.Length > 0 && CalendarTextWidth(holidayLabel, shortened + "…") > holidayLabel.ActualWidth)
+                                shortened = shortened[..^1];
+                            return shortened + "…";
+                        }));
+                    }
                     if (holidayLabel.Text != text) holidayLabel.Text = text;
                 }
                 AlignInk();
@@ -88,7 +103,7 @@ public partial class MainWindow
         if (countsCaption.Length > 0)
         {
             var count = new TextBlock { Text = hasOccasions ? countsCaption.Split('\n')[0] : countsCaption,
-                FontSize = UiTypography.Grow(12), Margin = new Thickness(0, hasOccasions ? 2 : 0, 0, 0),
+                FontFamily = FontFamily, FontSize = UiTypography.Body, Margin = new Thickness(0, hasOccasions ? 2 : 0, 0, 0),
                 TextTrimming = TextTrimming.CharacterEllipsis, ToolTip = countsCaption,
                 Foreground = ResourceBrush(selectedDay ? "AccentInk" : "Muted"), Tag = "record-count-caption" };
             body.Children.Add(count);

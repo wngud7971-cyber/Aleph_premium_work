@@ -1,0 +1,112 @@
+{
+  "success": true,
+  "mode": "layout",
+  "count": 37,
+  "checks": [
+    "collapsed-filter-keeps-at-least-160dip-results-False",
+    "closed-filter-keeps-and-describes-active-date-False",
+    "clear-filter-resets-dates-False",
+    "dpi-input-line-fit-1-False",
+    "summary-footer-describes-current-screen-False",
+    "summary-shortcut-reaches-comparison-1-False",
+    "summary-shortcut-returns-to-editing-1-False",
+    "dpi-input-line-fit-1.25-False",
+    "summary-shortcut-reaches-comparison-1.25-False",
+    "summary-shortcut-returns-to-editing-1.25-False",
+    "dpi-input-line-fit-1.5-False",
+    "summary-shortcut-reaches-comparison-1.5-False",
+    "summary-shortcut-returns-to-editing-1.5-False",
+    "dpi-input-line-fit-2-False",
+    "summary-shortcut-reaches-comparison-2-False",
+    "summary-shortcut-returns-to-editing-2-False",
+    "tab-cycle-visits-controls-without-losing-window-False",
+    "collapsed-filter-keeps-at-least-160dip-results-True",
+    "closed-filter-keeps-and-describes-active-date-True",
+    "clear-filter-resets-dates-True",
+    "dpi-input-line-fit-1-True",
+    "summary-footer-describes-current-screen-True",
+    "summary-shortcut-reaches-comparison-1-True",
+    "summary-shortcut-returns-to-editing-1-True",
+    "dpi-input-line-fit-1.25-True",
+    "summary-shortcut-reaches-comparison-1.25-True",
+    "summary-shortcut-returns-to-editing-1.25-True",
+    "dpi-input-line-fit-1.5-True",
+    "summary-shortcut-reaches-comparison-1.5-True",
+    "summary-shortcut-returns-to-editing-1.5-True",
+    "dpi-input-line-fit-2-True",
+    "summary-shortcut-reaches-comparison-2-True",
+    "summary-shortcut-returns-to-editing-2-True",
+    "tab-cycle-visits-controls-without-losing-window-True",
+    "synthetic-monitor-restores-entire-window--1920,0,1920,1040",
+    "synthetic-monitor-restores-entire-window-1920,-200,1706,920",
+    "synthetic-monitor-restores-entire-window-0,0,853,480"
+  ],
+  "metrics": [
+    {
+      "dark": false,
+      "searchViewport": 161
+    },
+    {
+      "dark": false,
+      "scale": 1,
+      "resultsHeight": 161,
+      "textHeight": 36
+    },
+    {
+      "dark": false,
+      "scale": 1.25,
+      "resultsHeight": 160.8,
+      "textHeight": 36
+    },
+    {
+      "dark": false,
+      "scale": 1.5,
+      "resultsHeight": 161.33333333333334,
+      "textHeight": 36
+    },
+    {
+      "dark": false,
+      "scale": 2,
+      "resultsHeight": 161,
+      "textHeight": 36
+    },
+    {
+      "dark": true,
+      "searchViewport": 161
+    },
+    {
+      "dark": true,
+      "scale": 1,
+      "resultsHeight": 161,
+      "textHeight": 36
+    },
+    {
+      "dark": true,
+      "scale": 1.25,
+      "resultsHeight": 160.8,
+      "textHeight": 36
+    },
+    {
+      "dark": true,
+      "scale": 1.5,
+      "resultsHeight": 161.33333333333334,
+      "textHeight": 36
+    },
+    {
+      "dark": true,
+      "scale": 2,
+      "resultsHeight": 161,
+      "textHeight": 36
+    }
+  ],
+  "monitors": [
+    {
+      "DeviceName": "\\\\.\\DISPLAY1",
+      "Primary": true,
+      "area": "{X=0,Y=0,Width=1920,Height=1032}"
+    }
+  ],
+  "dpiTests": "WPF visual DPI simulation; no OS setting changed",
+  "actualMultipleMonitors": false,
+  "personalDataUsed": false
+}

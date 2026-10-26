@@ -3,7 +3,9 @@ namespace Pds.Desktop;
 public static class UiTypography
 {
     // WPF font units are DIPs. One typographic point is 96/72 DIPs.
-    public const double PointIncrease = 96d / 72;
+    public const double OnePoint = 96d / 72;
+    // Two approved one-point steps; v1.78 adds one point to v1.77.
+    public const double PointIncrease = 2 * OnePoint;
     public const double Small = 10 + PointIncrease;
     public const double Body = 12 + PointIncrease;
     public const double Tick = 13 + PointIncrease;

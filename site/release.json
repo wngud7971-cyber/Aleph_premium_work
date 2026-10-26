@@ -1,0 +1,23 @@
+{
+  "version": "1.88",
+  "date": "2026-10-26",
+  "tag": "v1.88.0-final",
+  "zipName": "PDS-Windows-x64-final-20261026.zip",
+  "zipBytes": 75432423,
+  "zipSha256": "ec442322bafa0e3061feb7a3785805119af6351eff0a377ce3c74a51f42c1d2b",
+  "presentationName": "PDS-presentation-20261025.pptx",
+  "presentationBytes": 321015,
+  "presentationSha256": "e0531f0c10c5df5abd774a2348a35a860c6971c5d6c538fd6606fb48cda58138",
+  "planVersion": "1.88",
+  "schema": 12,
+  "backupVersion": 8,
+  "verification": {
+    "core": 390,
+    "wpf": 879,
+    "tray": 7,
+    "reopen": true,
+    "auxiliaryHostHistorical": 73,
+    "simulatedLayoutHistorical": 37
+  },
+  "screenshotsAreTestData": true
+}

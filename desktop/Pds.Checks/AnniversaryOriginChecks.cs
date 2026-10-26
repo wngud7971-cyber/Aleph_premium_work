@@ -36,7 +36,7 @@ static class AnniversaryOriginChecks
         check(new PlanRepository(repository.DatabasePath).LoadAnniversaries().Single().Origin == solarOrigin, "Full birth date survives reopening without changing original input calendar");
         var backup = repository.CreateBackup(); var restore = new PlanRepository(Path.Combine(directory, "birth-origin-restored.db"));
         restore.RestoreBackup(BackupFile.Parse(BackupFile.Serialize(backup)));
-        check(backup.Version == 3 && restore.LoadAnniversaries().Single().Origin == solarOrigin, "Backup v3 preserves complete origin birthday and inferred lunar rule");
+        check(backup.Version == 8 && restore.LoadAnniversaries().Single().Origin == solarOrigin, "Backup v4 preserves complete origin birthday and inferred lunar rule");
         var oldEntry = saved with { Origin = null };
         var v2 = backup with { Version = 2, Anniversaries = [oldEntry] };
         var node = JsonNode.Parse(BackupFile.Serialize(v2))!.AsObject();

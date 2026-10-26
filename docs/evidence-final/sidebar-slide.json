@@ -1,0 +1,75 @@
+{
+  "success": true,
+  "count": 30,
+  "milliseconds": 440,
+  "windowsAnimationsEnabled": true,
+  "explicitOverrideTests": true,
+  "checks": [
+    "sidebar-opening-has-a-finite-transition-False",
+    "slide-keeps-calendar-squares-font-and-editor-width-frame-0-False",
+    "slide-keeps-calendar-squares-font-and-editor-width-frame-1-False",
+    "slide-keeps-calendar-squares-font-and-editor-width-frame-2-False",
+    "sidebar-opening-configured-440ms-is-not-instant-False",
+    "sidebar-opens-monotonically-to-final-width-False",
+    "sliding-open-retains-selected-rightmost-date-False",
+    "sidebar-remains-visible-during-slide-out-False",
+    "sidebar-closing-configured-440ms-is-not-instant-False",
+    "sidebar-closes-without-resizing-calendar-cells-False",
+    "rapid-reversal-keeps-last-request-and-removes-clocks-False",
+    "manual-scroll-stops-automatic-scroll-clock-False",
+    "hidden-body-settles-sidebar-without-idle-work-False",
+    "reduced-motion-applies-final-sidebar-state-directly-False",
+    "sidebar-motion-does-not-write-or-dirty-records-False",
+    "sidebar-opening-has-a-finite-transition-True",
+    "slide-keeps-calendar-squares-font-and-editor-width-frame-0-True",
+    "slide-keeps-calendar-squares-font-and-editor-width-frame-1-True",
+    "slide-keeps-calendar-squares-font-and-editor-width-frame-2-True",
+    "sidebar-opening-configured-440ms-is-not-instant-True",
+    "sidebar-opens-monotonically-to-final-width-True",
+    "sliding-open-retains-selected-rightmost-date-True",
+    "sidebar-remains-visible-during-slide-out-True",
+    "sidebar-closing-configured-440ms-is-not-instant-True",
+    "sidebar-closes-without-resizing-calendar-cells-True",
+    "rapid-reversal-keeps-last-request-and-removes-clocks-True",
+    "manual-scroll-stops-automatic-scroll-clock-True",
+    "hidden-body-settles-sidebar-without-idle-work-True",
+    "reduced-motion-applies-final-sidebar-state-directly-True",
+    "sidebar-motion-does-not-write-or-dirty-records-True"
+  ],
+  "samples": [
+    {
+      "dark": false,
+      "widths": [
+        0,
+        13,
+        80,
+        192,
+        330
+      ],
+      "midClose": 326,
+      "openingMs": 409.3219,
+      "closingMs": 426.9435,
+      "cellWidth": 80,
+      "editorWidth": 314,
+      "manualOffset": 111
+    },
+    {
+      "dark": true,
+      "widths": [
+        0,
+        11,
+        60,
+        190,
+        330
+      ],
+      "midClose": 326,
+      "openingMs": 407.8234,
+      "closingMs": 432.7737,
+      "cellWidth": 80,
+      "editorWidth": 314,
+      "manualOffset": 111
+    }
+  ],
+  "personalDataUsed": false,
+  "physicalPointerTested": false
+}

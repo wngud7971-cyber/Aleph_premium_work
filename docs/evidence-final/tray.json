@@ -1,0 +1,17 @@
+{
+  "success": true,
+  "registered": true,
+  "checks": [
+    "private-native-tray-created-at-startup",
+    "registration-result-matches-shell-icon-rectangle",
+    "registered-icon-allows-x-to-hide",
+    "restore-preserves-draft-without-saving",
+    "forced-unavailable-icon-minimizes-instead-of-hiding",
+    "fallback-preserves-input-and-does-not-register-startup",
+    "only-test-icon-is-removed-at-exit"
+  ],
+  "count": 7,
+  "realTrayClickTested": false,
+  "explorerRestartTested": false,
+  "personalDataUsed": false
+}

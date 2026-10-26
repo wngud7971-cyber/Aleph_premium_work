@@ -26,7 +26,7 @@ public partial class MainWindow
     }
     private async Task ProcessEntryGuidanceAsync(bool allowVerification = false)
     {
-        if (verify && !allowVerification || exiting || !entryGuidancePending || !ready || busy || openingReminder || !IsVisible || WindowState == WindowState.Minimized) return;
+        if (verify && !allowVerification || exiting || !entryGuidancePending || !ready || busy || recordToolsOpen || openingReminder || !IsVisible || WindowState == WindowState.Minimized) return;
         var todayKey = EntryToday.ToString("yyyy-MM-dd", System.Globalization.CultureInfo.InvariantCulture);
         if (statisticsOpen && settings.MeditationEnabled && settings.MeditationDate != todayKey && !settings.MeditationShownDates.Contains(todayKey)) CloseStatistics();
         if (MeditationCard.Visibility != Visibility.Visible) ShowMeditationIfNeeded();
@@ -42,7 +42,7 @@ public partial class MainWindow
         try
         {
             var day = await Task.Run(() => repository.Load(date));
-            if (!IsVisible || WindowState == WindowState.Minimized || EntryToday != date)
+            if (!IsVisible || recordToolsOpen || WindowState == WindowState.Minimized || EntryToday != date)
             { entryGuidancePending = true; return; }
             var remaining = day.Plans.Where(p => !p.Done).ToArray();
             ReminderList.Children.Clear();
@@ -57,7 +57,7 @@ public partial class MainWindow
                 ReminderList.Children.Add(new Border { Background = ResourceBrush("Soft"), CornerRadius = new CornerRadius(8), Padding = new Thickness(12), Margin = new Thickness(0, 0, 0, 8), Child = item });
             }
             if (ReminderOverlay.Visibility != Visibility.Visible) reminderPreviousFocus = Keyboard.FocusedElement;
-            ReminderOverlay.Visibility = Visibility.Visible; FitReminder(); ReminderDismiss.Focus();
+            ReminderOverlay.Visibility = Visibility.Visible; FitReminder(); CalmMotion.Reveal(ReminderCard, CalmMotion.DialogMs); ReminderDismiss.Focus();
         }
         catch (Exception ex) { HandleError("오늘 할 일 확인", ex); }
         finally { openingReminder = false; }

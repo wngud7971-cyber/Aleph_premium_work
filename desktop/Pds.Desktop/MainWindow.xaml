@@ -1,101 +1,135 @@
 <Window x:Class="Pds.Desktop.MainWindow" xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" xmlns:ui="clr-namespace:Pds.Desktop" Style="{StaticResource {x:Type Window}}" Title="PDS · 하루를 가볍게" Width="900" Height="880" ResizeMode="CanMinimize" UseLayoutRounding="True" WindowStartupLocation="CenterScreen">
-  <Border Background="{DynamicResource Canvas}" CornerRadius="16" Margin="8">
-    <Grid>
-      <Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="*"/><RowDefinition Height="Auto"/></Grid.RowDefinitions>
-      <Grid x:Name="TopBar" Margin="20,14,20,10">
+  <Border Background="{DynamicResource Canvas}" CornerRadius="20" Margin="8">
+    <Grid x:Name="PageRoot">
+      <Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/><RowDefinition Height="*"/><RowDefinition Height="Auto"/></Grid.RowDefinitions>
+      <Border Background="{DynamicResource Paper}" BorderBrush="{DynamicResource Line}" BorderThickness="0,0,0,1" Margin="0,0,0,0" IsHitTestVisible="False"/>
+      <Grid x:Name="TopBar" Margin="24,12,24,12">
         <Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/></Grid.RowDefinitions>
         <Grid.ColumnDefinitions><ColumnDefinition Width="Auto"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
         <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
-          <TextBlock x:Name="Brand" Text="PDS." FontFamily="{StaticResource DisplayFont}" FontStyle="Italic" FontSize="{x:Static ui:UiTypography.Display}" Margin="0,0,20,0" VerticalAlignment="Center"/>
-          <Border Background="{DynamicResource Paper}" CornerRadius="20" Padding="3"><StackPanel Orientation="Horizontal">
-            <Button Content="캘린더" Background="{DynamicResource Note}" Click="Calendar_Click" Padding="10,5" Margin="0"/>
-            <Button Content="통계" Click="Statistics_Click" Padding="10,5" Margin="0"/>
-            <Button Content="기념일" Click="Anniversaries_Click" Padding="10,5" Margin="0"/>
-            <Button Content="설정" Click="Settings_Click" Padding="10,5" Margin="0"/>
+          <Button x:Name="HomeButton" Click="Calendar_Click" AutomationProperties.Name="캘린더 홈" ToolTip="캘린더로 돌아가기" Background="Transparent" BorderThickness="0" Padding="4,0" Margin="-4,0,16,0"><TextBlock x:Name="Brand" Text="PDS." FontFamily="{StaticResource DisplayFont}" FontStyle="Italic" FontSize="{x:Static ui:UiTypography.Display}" Margin="0" VerticalAlignment="Center"/></Button>
+          <Border Background="{DynamicResource Soft}" CornerRadius="12" Padding="4"><StackPanel Orientation="Horizontal">
+            <Button x:Name="CalendarNav" Content="캘린더" Style="{StaticResource NavigationButton}" Click="Calendar_Click" AutomationProperties.Name="캘린더 화면"/>
+            <Button x:Name="StatisticsNav" Content="통계" Style="{StaticResource NavigationButton}" Click="Statistics_Click" AutomationProperties.Name="통계 화면"/>
+            <Button x:Name="RecordsNav" Content="기록 관리" Style="{StaticResource NavigationButton}" Click="Records_Click" AutomationProperties.Name="통합 검색 휴지통 월간 결산 예산"/>
+            <Button Content="기념일" Style="{StaticResource NavigationButton}" Click="Anniversaries_Click" AutomationProperties.Name="기념일 관리"/>
           </StackPanel></Border>
         </StackPanel>
         <WrapPanel x:Name="TopActions" Grid.Column="1" HorizontalAlignment="Right" VerticalAlignment="Center">
-          <Button x:Name="ThemeButton" Content="다크 모드" Click="Theme_Click" Padding="10,6"/>
+          <Button x:Name="ThemeButton" Content="다크 모드" Style="{StaticResource ChromeButton}" Click="Theme_Click" Padding="12,5" AutomationProperties.Name="라이트와 다크 테마 전환"/>
+          <Button x:Name="SettingsButton" Content="설정" Style="{StaticResource ChromeButton}" Click="Settings_Click" Padding="12,5" ToolTip="테마 · 강조색 · 백업 설정" AutomationProperties.Name="설정"/>
         </WrapPanel>
       </Grid>
-      <Grid Grid.Row="1" x:Name="Body">
+      <Border x:Name="DashboardHeader" Grid.Row="1" Background="{DynamicResource Note}" CornerRadius="20" Padding="20,12" Margin="12,8,12,8" HorizontalAlignment="Left" Width="{Binding ActualWidth, ElementName=CalendarSurface}" Height="112">
+        <Grid>
+          <Grid.ColumnDefinitions><ColumnDefinition Width="1.6*"/><ColumnDefinition Width="1.1*"/><ColumnDefinition Width="1.2*"/></Grid.ColumnDefinitions>
+          <StackPanel VerticalAlignment="Center" Margin="0,0,16,0">
+            <TextBlock Text="오늘의 흐름" Foreground="{DynamicResource Muted}"/>
+            <TextBlock x:Name="DashboardDate" FontSize="{x:Static ui:UiTypography.Heading}" FontWeight="SemiBold" Margin="0,5,0,0" TextTrimming="CharacterEllipsis" ToolTip="{Binding Text, RelativeSource={RelativeSource Self}}"/>
+            <Button Content="오늘의 기록 열기 →" HorizontalAlignment="Left" Margin="-8,3,0,-5" Padding="8,4" Background="Transparent" Click="Today_Click"/>
+          </StackPanel>
+          <Grid Grid.Column="1" Margin="12,0,24,0"><Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/><RowDefinition/></Grid.RowDefinitions>
+            <TextBlock x:Name="DashboardPlanLabel" Text="계획 완료" Foreground="{DynamicResource Muted}"/>
+            <TextBlock Grid.Row="1" x:Name="DashboardPlanValue" FontSize="{x:Static ui:UiTypography.Heading}" FontWeight="SemiBold" Margin="0,6,0,7"/>
+            <Grid Grid.Row="2" Height="4" VerticalAlignment="Center" Background="{DynamicResource Paper}"><Grid.ColumnDefinitions><ColumnDefinition x:Name="DashboardDoneColumn" Width="0*"/><ColumnDefinition x:Name="DashboardRemainingColumn" Width="1*"/></Grid.ColumnDefinitions><Border Background="{DynamicResource Ink}" CornerRadius="2"/></Grid>
+          </Grid>
+          <Grid Grid.Column="2" Margin="12,0,0,0"><Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/><RowDefinition/></Grid.RowDefinitions>
+            <TextBlock x:Name="DashboardWorkoutLabel" Text="운동 기록" Foreground="{DynamicResource Muted}"/>
+            <TextBlock Grid.Row="1" x:Name="DashboardWorkoutValue" FontSize="{x:Static ui:UiTypography.Heading}" FontWeight="SemiBold" Margin="0,6,0,7"/>
+            <TextBlock Grid.Row="2" VerticalAlignment="Center" x:Name="Summary" Foreground="{DynamicResource Ink}" TextTrimming="CharacterEllipsis" ToolTip="{Binding Text, RelativeSource={RelativeSource Self}}"/>
+          </Grid>
+        </Grid>
+      </Border>
+      <Grid Grid.Row="2" x:Name="Body" ClipToBounds="True">
         <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition x:Name="DetailColumn" Width="0"/></Grid.ColumnDefinitions>
-        <Grid x:Name="CalendarArea" Margin="20,10,20,16" SizeChanged="Calendar_SizeChanged">
+        <Grid x:Name="CalendarArea" Margin="24,12,24,16" SizeChanged="Calendar_SizeChanged">
           <Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="*"/><RowDefinition Height="Auto"/></Grid.RowDefinitions>
-          <Grid x:Name="MonthHeader" Margin="0,0,0,18">
+          <Border x:Name="CalendarSurface" Grid.RowSpan="3" Style="{StaticResource FloatingSurface}" Background="{DynamicResource Paper}" BorderBrush="{DynamicResource Line}" BorderThickness="1" CornerRadius="20" Margin="-12,-12,-12,-8" IsHitTestVisible="False" Panel.ZIndex="-1"/>
+          <Grid x:Name="MonthHeader" Margin="8,0,8,4">
             <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
-            <StackPanel VerticalAlignment="Center"><TextBlock x:Name="YearTitle" Foreground="{DynamicResource Muted}" Margin="0,0,0,5"/><TextBlock x:Name="MonthTitle" FontFamily="{StaticResource DisplayFont}" FontStyle="Italic" FontSize="{x:Static ui:UiTypography.Display}"/><TextBlock x:Name="HolidayCoverage" FontSize="{x:Static ui:UiTypography.Small}" TextWrapping="Wrap" Foreground="{DynamicResource Muted}" Visibility="Collapsed"/></StackPanel>
-            <WrapPanel Grid.Column="1" VerticalAlignment="Center" HorizontalAlignment="Right"><Button Content="‹" ToolTip="이전 달" Click="Previous_Click" Padding="9,4"/><Button Content="오늘" Click="Today_Click" Padding="9,4"/><Button Content="›" ToolTip="다음 달" Click="Next_Click" Padding="9,4"/><Button Content="5분 명상" Background="{DynamicResource Note}" Click="Meditation_Click" Padding="10,4"/></WrapPanel>
+            <StackPanel VerticalAlignment="Center"><TextBlock x:Name="YearTitle" Foreground="{DynamicResource Muted}" Margin="0,0,0,2"/><TextBlock x:Name="MonthTitle" FontFamily="{StaticResource DisplayFont}" FontStyle="Normal" FontSize="{x:Static ui:UiTypography.Display}"/><TextBlock x:Name="HolidayCoverage" FontSize="{x:Static ui:UiTypography.Small}" TextWrapping="Wrap" Foreground="{DynamicResource Muted}" Visibility="Collapsed"/></StackPanel>
+            <WrapPanel Grid.Column="1" VerticalAlignment="Center" HorizontalAlignment="Right">
+              <Button x:Name="PreviousMonthButton" Style="{StaticResource ChromeButton}" Width="32" Padding="0" ToolTip="이전 달" AutomationProperties.Name="이전 달" Click="Previous_Click"><Path Data="M 8,2 L 3,7 L 8,12" Stroke="{DynamicResource Ink}" StrokeThickness="1.5" Width="6" Height="10" Stretch="Fill"/></Button>
+              <Button x:Name="TodayButton" Content="오늘" Style="{StaticResource ChromeButton}" Click="Today_Click" Padding="12,5"/>
+              <Button x:Name="NextMonthButton" Style="{StaticResource ChromeButton}" Width="32" Padding="0" ToolTip="다음 달" AutomationProperties.Name="다음 달" Click="Next_Click"><Path Data="M 3,2 L 8,7 L 3,12" Stroke="{DynamicResource Ink}" StrokeThickness="1.5" Width="6" Height="10" Stretch="Fill"/></Button>
+              <Button Content="5분 명상" Style="{StaticResource ChromeButton}" Background="{DynamicResource Note}" Click="Meditation_Click" Padding="10,5" Margin="10,3,3,3"/>
+            </WrapPanel>
           </Grid>
           <Grid Grid.Row="1">
             <Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="*"/></Grid.RowDefinitions>
-            <Border ClipToBounds="True" Height="30"><Canvas><UniformGrid x:Name="WeekDays" Columns="7" Height="30" HorizontalAlignment="Left"/></Canvas></Border>
-            <ScrollViewer x:Name="CalendarViewport" Grid.Row="1" VerticalScrollBarVisibility="Disabled" HorizontalScrollBarVisibility="Auto" HorizontalContentAlignment="Left" VerticalContentAlignment="Top" ScrollChanged="Calendar_ScrollChanged" SizeChanged="Calendar_SizeChanged">
-              <UniformGrid x:Name="MonthGrid" Columns="7" HorizontalAlignment="Left" VerticalAlignment="Top"/>
+            <Border ClipToBounds="True" Height="30"><Canvas><UniformGrid x:Name="WeekDays" Background="{DynamicResource Paper}" RenderOptions.ClearTypeHint="Enabled" Columns="7" Height="30" HorizontalAlignment="Left"/></Canvas></Border>
+            <ScrollViewer x:Name="CalendarViewport" Style="{StaticResource CalendarScrollViewport}" Background="{DynamicResource Paper}" RenderOptions.ClearTypeHint="Enabled" Grid.Row="1" VerticalScrollBarVisibility="Disabled" HorizontalScrollBarVisibility="Auto" HorizontalContentAlignment="Center" VerticalContentAlignment="Top" ScrollChanged="Calendar_ScrollChanged" SizeChanged="Calendar_SizeChanged">
+              <UniformGrid x:Name="MonthGrid" Columns="7" HorizontalAlignment="Center" VerticalAlignment="Top"/>
             </ScrollViewer>
           </Grid>
-          <Border Grid.Row="2" Background="{DynamicResource Paper}" CornerRadius="10" Padding="12,8" Margin="0,12,0,0"><TextBlock x:Name="Summary" Foreground="{DynamicResource Muted}"/></Border>
-          <Border Grid.RowSpan="3" x:Name="MeditationCard" Width="420" MinHeight="160" HorizontalAlignment="Center" VerticalAlignment="Top" Background="{DynamicResource Paper}" BorderBrush="{DynamicResource Accent}" BorderThickness="1,5,1,1" CornerRadius="12" Panel.ZIndex="5" Visibility="Collapsed">
-            <Border.Effect><DropShadowEffect BlurRadius="20" ShadowDepth="4" Opacity="0.16"/></Border.Effect>
+          <TextBlock Grid.Row="2" x:Name="CalendarScrollHint" Text="좌우로 이동하면 모든 날짜를 볼 수 있어요." Foreground="{DynamicResource Muted}" TextWrapping="Wrap" Margin="8,6,8,0" Visibility="Collapsed"/>
+          <Border Grid.RowSpan="3" x:Name="MeditationShadow" Style="{StaticResource FloatingSurface}" Background="{DynamicResource Paper}" CornerRadius="20" IsHitTestVisible="False" HorizontalAlignment="Center" VerticalAlignment="Top" Width="{Binding ActualWidth, ElementName=MeditationCard}" Height="{Binding ActualHeight, ElementName=MeditationCard}" Margin="{Binding Margin, ElementName=MeditationCard}" Visibility="{Binding Visibility, ElementName=MeditationCard}" Panel.ZIndex="4"/>
+          <Border Grid.RowSpan="3" x:Name="MeditationCard" Width="420" MinHeight="160" HorizontalAlignment="Center" VerticalAlignment="Top" Background="{DynamicResource Paper}" BorderBrush="{DynamicResource Accent}" BorderThickness="1,5,1,1" CornerRadius="20" Panel.ZIndex="5" Visibility="Collapsed">
             <Grid Margin="26">
               <Button Content="×" HorizontalAlignment="Right" VerticalAlignment="Top" Margin="0,-18,-18,0" Padding="7,2" ToolTip="언제든 닫을 수 있어요" Click="DismissMeditation_Click"/>
               <StackPanel VerticalAlignment="Center">
                 <TextBlock Text="5분 명상" FontSize="{x:Static ui:UiTypography.Heading}" Margin="0,0,0,10"/>
-                <TextBlock x:Name="MeditationMessage" Text="잠시 호흡을 고르고, 차분하게 시작해 보세요." Foreground="{DynamicResource Muted}" TextWrapping="Wrap" MinHeight="40" LineHeight="20" LineStackingStrategy="BlockLineHeight"/>
-                <Grid Margin="0,12,0,0" Height="36">
+                <TextBlock x:Name="MeditationMessage" Text="잠시 호흡을 고르고, 차분하게 시작해 보세요." Foreground="{DynamicResource Muted}" TextWrapping="Wrap" MinHeight="48" LineHeight="24" LineStackingStrategy="BlockLineHeight"/>
+                <Grid Margin="0,12,0,0" Height="38">
                   <Grid.ColumnDefinitions><ColumnDefinition/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
-                  <TextBlock x:Name="MeditationRemaining" Text="05:00" FontFamily="Consolas, Courier New" FontStyle="Normal" FontWeight="Normal" FontSize="{x:Static ui:UiTypography.Timer}" Typography.NumeralAlignment="Tabular" Typography.NumeralStyle="Lining" Width="112" Height="36" LineHeight="36" LineStackingStrategy="BlockLineHeight" HorizontalAlignment="Left" VerticalAlignment="Center" TextAlignment="Left"/>
-                  <Button Grid.Column="1" x:Name="MeditationStart" Content="시작" Width="96" Height="36" Margin="0" Background="{DynamicResource Accent}" Foreground="{DynamicResource AccentInk}" Click="StartMeditation_Click" Padding="12,7"/>
+                  <TextBlock x:Name="MeditationRemaining" Text="05:00" FontFamily="{StaticResource BodyFont}" FontStyle="Normal" FontWeight="Normal" FontSize="{x:Static ui:UiTypography.Timer}" Typography.NumeralAlignment="Tabular" Typography.NumeralStyle="Lining" Width="112" Height="38" LineHeight="38" LineStackingStrategy="BlockLineHeight" HorizontalAlignment="Left" VerticalAlignment="Center" TextAlignment="Left"/>
+                  <Button Grid.Column="1" x:Name="MeditationStart" Content="시작" Width="96" Height="38" Margin="0" Background="{DynamicResource Accent}" Foreground="{DynamicResource AccentInk}" Click="StartMeditation_Click" Padding="12,6"/>
                 </Grid>
                 <TextBlock Text="언제든 닫아도 괜찮아요." Foreground="{DynamicResource Muted}" Margin="0,8,0,0"/>
               </StackPanel>
             </Grid>
           </Border>
         </Grid>
-        <Border Grid.Column="1" x:Name="Details" Background="{DynamicResource Paper}" CornerRadius="16" Margin="0,0,16,16" Visibility="Collapsed">
+        <Grid Grid.Column="1" x:Name="DetailsClip" ClipToBounds="True">
+        <Border Width="314" HorizontalAlignment="Left" x:Name="DetailsShadow" Style="{StaticResource FloatingSurface}" Background="{DynamicResource Soft}" CornerRadius="20" Margin="0,0,16,16" Visibility="{Binding Visibility, ElementName=Details}" IsHitTestVisible="False"/>
+        <Border Width="314" HorizontalAlignment="Left" x:Name="Details" RenderOptions.ClearTypeHint="Enabled" Background="{DynamicResource Soft}" BorderThickness="0" CornerRadius="20" Margin="0,0,16,16" Visibility="Collapsed">
           <Grid>
             <Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/><RowDefinition Height="*"/><RowDefinition Height="Auto"/></Grid.RowDefinitions>
-            <Border Padding="20,18" Background="{DynamicResource Note}" CornerRadius="16,16,0,0">
+            <Border Padding="20,22" Background="Transparent" CornerRadius="20,20,0,0">
               <Grid><Grid.ColumnDefinitions><ColumnDefinition Width="Auto"/><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
                 <TextBlock x:Name="SelectedNumber" FontFamily="{StaticResource DisplayFont}" FontSize="{x:Static ui:UiTypography.SelectedDate}" VerticalAlignment="Center" Margin="0,0,14,0"/>
-                <StackPanel Grid.Column="1" VerticalAlignment="Center"><TextBlock x:Name="SelectedYear" Foreground="{DynamicResource Muted}"/><TextBlock x:Name="SelectedTitle" Margin="0,4,0,0"/></StackPanel>
+                <StackPanel Grid.Column="1" VerticalAlignment="Center"><TextBlock Text="하루의 기록" FontWeight="SemiBold" Margin="0,0,0,3"/><TextBlock x:Name="SelectedYear" Foreground="{DynamicResource Muted}"/><TextBlock x:Name="SelectedTitle" Margin="0,4,0,0"/></StackPanel>
                 <Button Grid.Column="2" Content="×" ToolTip="상세 닫기" Click="CloseDetails_Click" VerticalAlignment="Top" Padding="4,0" Margin="8,0,0,0" Background="Transparent"/>
               </Grid>
             </Border>
-            <Border Grid.Row="1" Background="{DynamicResource Soft}" CornerRadius="8" Margin="16,14,16,0" Padding="3"><UniformGrid Columns="3"><Button x:Name="PlanTab" Content="계획" Click="PlanTab_Click" Margin="0" Padding="5,7" Background="{DynamicResource Note}"/><Button x:Name="WorkoutTab" Content="운동" Click="WorkoutTab_Click" Margin="0" Padding="5,7" Background="Transparent"/><Button x:Name="ReviewTab" Content="회고" Click="ReviewTab_Click" Margin="0" Padding="5,7" Background="Transparent"/></UniformGrid></Border>
+            <Border Grid.Row="1" Background="{DynamicResource Paper}" CornerRadius="12" Margin="16,0,16,0" Padding="4"><UniformGrid Columns="5"><Button x:Name="PlanTab" Content="계획" Click="PlanTab_Click" Margin="0" Padding="2,7" Background="{DynamicResource Note}"/><Button x:Name="WorkoutTab" Content="운동" Click="WorkoutTab_Click" Margin="0" Padding="2,7" Background="Transparent"/><Button x:Name="ReviewTab" Content="회고" Click="ReviewTab_Click" Margin="0" Padding="2,7" Background="Transparent"/><Button x:Name="MoneyTab" Content="가계부" Click="MoneyTab_Click" Margin="0" Padding="2,7" Background="Transparent"/><Button x:Name="StudyTab" Content="학습" Click="StudyTab_Click" Margin="0" Padding="2,7" Background="Transparent"/></UniformGrid></Border>
             <ScrollViewer x:Name="PlanPane" Grid.Row="2" VerticalScrollBarVisibility="Auto"><StackPanel Margin="18,18,18,4">
               <StackPanel x:Name="HolidayDayList" Margin="0,0,0,8" Visibility="Collapsed"/>
               <StackPanel x:Name="AnniversaryDayList" Margin="0,0,0,12" Visibility="Collapsed"/>
-              <Grid Margin="0,0,0,8"><TextBlock Text="오늘의 계획"/><TextBlock x:Name="DailyCount" HorizontalAlignment="Right" Foreground="{DynamicResource Muted}"/></Grid>
+              <Grid Margin="0,0,0,8"><TextBlock Text="오늘의 계획" Style="{StaticResource SectionLabel}"/><TextBlock x:Name="DailyCount" HorizontalAlignment="Right" Foreground="{DynamicResource Muted}"/></Grid>
               <TextBlock x:Name="EmptyMessage" Text="아직 계획이 없어요." Foreground="{DynamicResource Muted}" Margin="0,8,0,12"/>
-              <TextBlock Text="완료 체크는 선택한 날짜에 실행한 것으로 기록해요. 실제 날짜는 수정에서 바꿀 수 있어요." Foreground="{DynamicResource Muted}" TextWrapping="Wrap" Margin="0,0,0,10"/>
               <StackPanel x:Name="PlanList"/>
-              <TextBlock x:Name="EditorTitle" Text="새 계획" Foreground="{DynamicResource Muted}" Margin="0,16,0,0"/>
+              <Expander x:Name="PlanComposer" Header="계획 추가 · 수정" AutomationProperties.Name="계획 입력 영역 펼치기" Margin="0,12,0,0"><StackPanel>
+              <TextBlock Text="완료 체크는 선택한 날짜에 실행한 것으로 기록해요. 실제 날짜는 수정에서 바꿀 수 있어요." Foreground="{DynamicResource Muted}" TextWrapping="Wrap" Margin="0,0,0,10"/>
+              <TextBlock x:Name="EditorTitle" Text="새 계획" Style="{StaticResource SectionLabel}" Margin="0,18,0,8"/>
+              <TextBlock Text="제목" Style="{StaticResource FormLabel}"/>
               <TextBox x:Name="TitleInput" MaxLength="200" TextChanged="Editor_Changed" AutomationProperties.Name="계획 제목"/>
               <CheckBox x:Name="TimeEnabled" Content="시간 지정 · 선택" Checked="Time_Changed" Unchecked="Time_Changed"/>
-              <Grid x:Name="TimeFields" Visibility="Collapsed"><Grid.ColumnDefinitions><ColumnDefinition/><ColumnDefinition Width="16"/><ColumnDefinition/></Grid.ColumnDefinitions><TextBox x:Name="StartInput" MaxLength="5" TextChanged="Editor_Changed" ToolTip="시작 시간 · 예: 09:00" AutomationProperties.Name="시작 시간"/><TextBox Grid.Column="2" x:Name="EndInput" MaxLength="5" TextChanged="Editor_Changed" ToolTip="종료 시간 · 예: 10:00" AutomationProperties.Name="종료 시간"/></Grid>
+              <Grid x:Name="TimeFields" Visibility="Collapsed"><Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/></Grid.RowDefinitions><Grid.ColumnDefinitions><ColumnDefinition/><ColumnDefinition Width="16"/><ColumnDefinition/></Grid.ColumnDefinitions><TextBlock Text="시작 · 09:00" Foreground="{DynamicResource Muted}"/><TextBlock Grid.Column="2" Text="종료 · 10:00" Foreground="{DynamicResource Muted}"/><TextBox Grid.Row="1" x:Name="StartInput" MaxLength="5" TextChanged="Editor_Changed" ToolTip="시작 시간 · 예: 09:00" AutomationProperties.Name="시작 시간"/><TextBox Grid.Row="1" Grid.Column="2" x:Name="EndInput" MaxLength="5" TextChanged="Editor_Changed" ToolTip="종료 시간 · 예: 10:00" AutomationProperties.Name="종료 시간"/></Grid>
               <StackPanel x:Name="ActualDateFields" Visibility="Collapsed"><TextBlock Text="실제 완료 날짜 · 선택" Foreground="{DynamicResource Muted}"/><DatePicker x:Name="ActualDateInput" SelectedDateChanged="ActualDate_Changed" AutomationProperties.Name="계획 실제 완료 날짜"/><TextBlock Text="미입력 기록은 요일별 완료 집계에서 제외돼요." Foreground="{DynamicResource Muted}" TextWrapping="Wrap" Margin="0,4,0,8"/></StackPanel>
               <TextBlock Text="메모 · 선택" Foreground="{DynamicResource Muted}" Margin="0,12,0,0"/><TextBox x:Name="NoteInput" AcceptsReturn="True" TextWrapping="Wrap" Height="72" VerticalScrollBarVisibility="Auto" MaxLength="2000" TextChanged="Editor_Changed" AutomationProperties.Name="계획 메모"/>
               <Button x:Name="CancelEditButton" Content="수정 취소" Click="CancelEdit_Click" Visibility="Collapsed"/>
+              </StackPanel></Expander>
             </StackPanel></ScrollViewer>
             <ScrollViewer x:Name="WorkoutPane" Grid.Row="2" Visibility="Collapsed" VerticalScrollBarVisibility="Auto"><StackPanel Margin="18,18,18,4">
               <Grid Margin="0,0,0,8"><TextBlock Text="오늘의 운동"/><TextBlock x:Name="WorkoutCount" MaxWidth="175" TextWrapping="Wrap" TextAlignment="Right" HorizontalAlignment="Right" Foreground="{DynamicResource Muted}"/></Grid>
               <TextBlock x:Name="WorkoutRecordDate" TextWrapping="Wrap" Margin="0,0,0,12" Foreground="{DynamicResource Muted}"/>
               <TextBlock x:Name="EmptyWorkoutMessage" Text="아직 운동 기록이 없어요." Foreground="{DynamicResource Muted}" Margin="0,8,0,12"/>
               <StackPanel x:Name="WorkoutList"/>
-              <TextBlock x:Name="WorkoutEditorTitle" Text="새 운동" Margin="0,16,0,8" Foreground="{DynamicResource Muted}"/>
+              <Expander x:Name="WorkoutComposer" Header="운동 추가 · 수정" AutomationProperties.Name="운동 입력 영역 펼치기" Margin="0,12,0,0"><StackPanel>
+              <TextBlock x:Name="WorkoutEditorTitle" Text="새 운동" Margin="0,18,0,10" Style="{StaticResource SectionLabel}"/>
               <TextBlock Text="분류" Foreground="{DynamicResource Muted}"/>
               <ComboBox x:Name="WorkoutCategory" SelectionChanged="WorkoutCategory_Changed" AutomationProperties.Name="운동 분류"/>
               <TextBlock Text="세부 종목" Foreground="{DynamicResource Muted}"/>
               <ComboBox x:Name="WorkoutExercise" SelectionChanged="WorkoutExercise_Changed" AutomationProperties.Name="운동 종목"/>
-              <StackPanel x:Name="WorkoutQuantityFields" Visibility="Collapsed"><TextBlock x:Name="WorkoutQuantityLabel" Foreground="{DynamicResource Muted}"/><TextBox x:Name="WorkoutQuantity" MaxLength="10" TextChanged="Editor_Changed" AutomationProperties.Name="운동 횟수 또는 층수"/></StackPanel>
+              <StackPanel x:Name="WorkoutQuantityFields" Visibility="Collapsed"><TextBlock x:Name="WorkoutQuantityLabel" Foreground="{DynamicResource Muted}"/><TextBox x:Name="WorkoutQuantity" TextAlignment="Right" MaxLength="10" TextChanged="Editor_Changed" AutomationProperties.Name="운동 횟수 또는 층수"/></StackPanel>
               <TextBlock x:Name="WorkoutTimeLabel" Text="운동 시간" Foreground="{DynamicResource Muted}"/>
-              <Grid><Grid.ColumnDefinitions><ColumnDefinition/><ColumnDefinition Width="28"/><ColumnDefinition/><ColumnDefinition Width="24"/></Grid.ColumnDefinitions><TextBox x:Name="WorkoutMinutes" TextChanged="Editor_Changed" MaxLength="4" AutomationProperties.Name="운동 시간 분"/><TextBlock Grid.Column="1" Text="분" VerticalAlignment="Center" Margin="5,0,0,6"/><TextBox Grid.Column="2" x:Name="WorkoutSeconds" TextChanged="Editor_Changed" MaxLength="2" AutomationProperties.Name="운동 시간 초"/><TextBlock Grid.Column="3" Text="초" VerticalAlignment="Center" Margin="5,0,0,6"/></Grid>
+              <Grid><Grid.ColumnDefinitions><ColumnDefinition/><ColumnDefinition Width="28"/><ColumnDefinition/><ColumnDefinition Width="24"/></Grid.ColumnDefinitions><TextBox x:Name="WorkoutMinutes" TextAlignment="Right" TextChanged="Editor_Changed" MaxLength="4" AutomationProperties.Name="운동 시간 분"/><TextBlock Grid.Column="1" Text="분" VerticalAlignment="Center" Margin="5,5,0,10"/><TextBox Grid.Column="2" x:Name="WorkoutSeconds" TextAlignment="Right" TextChanged="Editor_Changed" MaxLength="2" AutomationProperties.Name="운동 시간 초"/><TextBlock Grid.Column="3" Text="초" VerticalAlignment="Center" Margin="5,5,0,10"/></Grid>
               <TextBlock x:Name="WorkoutInputHint" Foreground="{DynamicResource Muted}" TextWrapping="Wrap" Margin="0,0,0,12"/>
               <StackPanel x:Name="FutsalFields" Visibility="Collapsed">
                 <TextBlock Text="실제 경기 시간 · 선택" Foreground="{DynamicResource Muted}"/>
-                <Grid><Grid.ColumnDefinitions><ColumnDefinition/><ColumnDefinition Width="28"/><ColumnDefinition/><ColumnDefinition Width="24"/></Grid.ColumnDefinitions><TextBox x:Name="FutsalMinutes" MaxLength="4" TextChanged="EnergyText_Changed" AutomationProperties.Name="풋살 실제 경기 분"/><TextBlock Grid.Column="1" Text="분" VerticalAlignment="Center"/><TextBox Grid.Column="2" x:Name="FutsalSeconds" MaxLength="2" TextChanged="EnergyText_Changed" AutomationProperties.Name="풋살 실제 경기 초"/><TextBlock Grid.Column="3" Text="초" VerticalAlignment="Center"/></Grid>
-                <WrapPanel><Button Content="총 2시간" Click="FutsalTwoHours_Click" Padding="9,5"/><TextBox x:Name="FutsalCycles" Width="45" MaxLength="2" Text="6" Margin="3" ToolTip="완료한 20분 주기 횟수"/><Button Content="15+5 제안" Click="FutsalPattern_Click" Padding="9,5"/></WrapPanel>
+                <Grid><Grid.ColumnDefinitions><ColumnDefinition/><ColumnDefinition Width="28"/><ColumnDefinition/><ColumnDefinition Width="24"/></Grid.ColumnDefinitions><TextBox x:Name="FutsalMinutes" TextAlignment="Right" MaxLength="4" TextChanged="EnergyText_Changed" AutomationProperties.Name="풋살 실제 경기 분"/><TextBlock Grid.Column="1" Text="분" VerticalAlignment="Center" Margin="5,5,0,10"/><TextBox Grid.Column="2" x:Name="FutsalSeconds" MaxLength="2" TextChanged="EnergyText_Changed" AutomationProperties.Name="풋살 실제 경기 초"/><TextBlock Grid.Column="3" Text="초" VerticalAlignment="Center" Margin="5,5,0,10"/></Grid>
+                <WrapPanel><Button Content="총 2시간" Click="FutsalTwoHours_Click" Padding="9,5"/><TextBox x:Name="FutsalCycles" TextAlignment="Right" Width="45" MaxLength="2" Text="6" Margin="3" ToolTip="완료한 20분 주기 횟수"/><Button Content="15+5 제안" Click="FutsalPattern_Click" Padding="9,5"/></WrapPanel>
                 <TextBlock Text="15+5는 완료한 주기 수로 시간을 제안해요. 제안값을 적용한 뒤 실제 경기 시간을 확인하세요." Foreground="{DynamicResource Muted}" TextWrapping="Wrap" Margin="0,5,0,10"/>
               </StackPanel>
               <Border Background="{DynamicResource Soft}" CornerRadius="8" Padding="10" Margin="0,0,0,12"><StackPanel>
@@ -105,12 +139,12 @@
                 <StackPanel x:Name="EnergyFields" Visibility="Collapsed">
                   <CheckBox x:Name="AdultBasis" Content="19~59세 성인 기준 적용 확인" Checked="EnergyOption_Changed" Unchecked="EnergyOption_Changed"/>
                   <TextBlock Text="이 운동의 적용 체중 · kg" Foreground="{DynamicResource Muted}"/>
-                  <TextBox x:Name="EnergyWeight" MaxLength="10" TextChanged="EnergyText_Changed" AutomationProperties.Name="운동 계산 체중 kg"/>
+                  <TextBox x:Name="EnergyWeight" TextAlignment="Right" MaxLength="10" TextChanged="EnergyText_Changed" AutomationProperties.Name="운동 계산 체중 kg"/>
                   <Button Content="현재 기본 체중 적용" Click="UseCurrentWeight_Click" Padding="8,5" HorizontalAlignment="Left"/>
                   <TextBlock Text="기록별 체중을 바꿔도 기본 체중 갱신일은 바뀌지 않아요. 과거 운동에는 당시 적용할 값을 확인하세요." Foreground="{DynamicResource Muted}" TextWrapping="Wrap" Margin="0,6,0,8"/>
                   <CheckBox x:Name="EnergyDetailed" Content="상세 입력" Checked="EnergyOption_Changed" Unchecked="EnergyOption_Changed"/>
                   <ComboBox x:Name="EnergyPresetChoice" SelectionChanged="EnergyPreset_Changed" AutomationProperties.Name="운동 kcal 기준"/>
-                  <StackPanel x:Name="EnergyDetailFields" Visibility="Collapsed"><TextBlock x:Name="EnergyDetailLabel" Foreground="{DynamicResource Muted}" TextWrapping="Wrap"/><TextBox x:Name="EnergyDetailValue" MaxLength="12" TextChanged="EnergyText_Changed" AutomationProperties.Name="kcal 상세 속도 또는 출력"/><TextBlock Text="속도는 원문 mph 경계로 환산해 대응해요. 평지·짐 없음, 러닝머신은 일반 장비의 경사 0% 걷기만 지원해요. 맞는 조건이 없으면 계산하지 않아요." Foreground="{DynamicResource Muted}" TextWrapping="Wrap" Margin="0,0,0,10"/></StackPanel>
+                  <StackPanel x:Name="EnergyDetailFields" Visibility="Collapsed"><TextBlock x:Name="EnergyDetailLabel" Foreground="{DynamicResource Muted}" TextWrapping="Wrap"/><TextBox x:Name="EnergyDetailValue" TextAlignment="Right" MaxLength="12" TextChanged="EnergyText_Changed" AutomationProperties.Name="kcal 상세 속도 또는 출력"/><TextBlock Text="속도는 원문 mph 경계로 환산해 대응해요. 평지·짐 없음, 러닝머신은 일반 장비의 경사 0% 걷기만 지원해요. 맞는 조건이 없으면 계산하지 않아요." Foreground="{DynamicResource Muted}" TextWrapping="Wrap" Margin="0,0,0,10"/></StackPanel>
                 </StackPanel>
                 <TextBlock x:Name="EnergyPreview" TextWrapping="Wrap" Foreground="{DynamicResource Ink}" Margin="0,8,0,0"/>
                 <TextBlock x:Name="EnergyBasis" TextWrapping="Wrap" Foreground="{DynamicResource Muted}" Margin="0,8,0,0"/>
@@ -118,27 +152,85 @@
               <TextBlock Text="메모 · 선택" Foreground="{DynamicResource Muted}"/><TextBox x:Name="WorkoutNote" AcceptsReturn="True" TextWrapping="Wrap" Height="64" VerticalScrollBarVisibility="Auto" MaxLength="2000" TextChanged="Editor_Changed" AutomationProperties.Name="운동 메모"/>
               <TextBlock Text="예상 kcal은 휴식 대사를 포함한 해당 시간의 총 소모량 추정이에요. 세트·거리 입력은 다음 단계에 추가해요." Foreground="{DynamicResource Muted}" TextWrapping="Wrap" Margin="0,0,0,10"/>
               <Button x:Name="CancelWorkoutEdit" Content="운동 입력 취소" Click="CancelWorkoutEdit_Click"/>
+              </StackPanel></Expander>
             </StackPanel></ScrollViewer>
             <ScrollViewer x:Name="ReviewPane" Grid.Row="2" Visibility="Collapsed" VerticalScrollBarVisibility="Auto"><StackPanel Margin="18,18,18,4">
               <TextBlock Text="하루 회고" Margin="0,0,0,8"/>
               <TextBlock Text="모두 선택 입력이에요. 한 칸만 적어도 괜찮아요." Foreground="{DynamicResource Muted}" TextWrapping="Wrap" Margin="0,0,0,12"/>
               <TextBlock x:Name="ReviewState" Foreground="{DynamicResource Muted}" Margin="0,0,0,12"/>
+              <TextBlock x:Name="ReviewPreview" TextWrapping="Wrap" Margin="0,0,0,12"/>
+              <Expander x:Name="ReviewComposer" Header="회고 작성 · 수정" AutomationProperties.Name="회고 입력 영역 펼치기"><StackPanel>
               <TextBlock Text="잘한 점"/><TextBox x:Name="ReviewGood" AcceptsReturn="True" TextWrapping="Wrap" Height="104" MaxLength="2000" VerticalScrollBarVisibility="Auto" TextChanged="Review_Changed" AutomationProperties.Name="회고 잘한 점"/>
               <TextBlock Text="아쉬운 점"/><TextBox x:Name="ReviewDifficult" AcceptsReturn="True" TextWrapping="Wrap" Height="104" MaxLength="2000" VerticalScrollBarVisibility="Auto" TextChanged="Review_Changed" AutomationProperties.Name="회고 아쉬운 점"/>
               <TextBlock Text="다음 행동"/><TextBox x:Name="ReviewNextAction" AcceptsReturn="True" TextWrapping="Wrap" Height="104" MaxLength="2000" VerticalScrollBarVisibility="Auto" TextChanged="Review_Changed" AutomationProperties.Name="회고 다음 행동"/>
               <TextBlock Text="각 칸은 2,000자까지 저장해요. 저장한 회고를 전부 비우면 저장할 때 삭제 여부를 확인해요." Foreground="{DynamicResource Muted}" TextWrapping="Wrap" Margin="0,0,0,12"/>
+              </StackPanel></Expander>
             </StackPanel></ScrollViewer>
-            <StackPanel Grid.Row="3" Margin="18,8,18,16"><TextBlock x:Name="SaveStatus" Text="선택한 날짜의 기록" Foreground="{DynamicResource Muted}" TextWrapping="Wrap" Margin="0,0,0,8"/><Button x:Name="SaveButton" Content="저장" Background="{DynamicResource Accent}" Foreground="{DynamicResource AccentInk}" ToolTip="계획·운동·회고의 변경을 함께 저장해요." Click="Save_Click" Margin="0" Padding="12,9"/></StackPanel>
+            <ScrollViewer x:Name="MoneyPane" Grid.Row="2" Visibility="Collapsed" VerticalScrollBarVisibility="Auto"><StackPanel Margin="18,18,18,4">
+              <TextBlock Text="하루의 수입과 지출" Style="{StaticResource SectionLabel}"/>
+              <StackPanel x:Name="MoneyDaySummary" Margin="0,8,0,12"/>
+              <TextBlock x:Name="MoneyEmpty" Text="아직 가계부 기록이 없어요." Margin="0,8,0,12" Foreground="{DynamicResource Muted}"/>
+              <StackPanel x:Name="MoneyList"/>
+              <Expander Header="매월 고정 지출 관리" Margin="0,8,0,4"><StackPanel>
+                <TextBlock x:Name="FixedCostHeading" Style="{StaticResource SectionLabel}" Margin="0,12,0,8"/>
+                <TextBlock Text="지정일이 되면 자동으로 반영돼요. 앱을 꺼둔 기간은 다음 실행에 반영하며, 같은 달에 두 번 넣지 않아요." Foreground="{DynamicResource Muted}" TextWrapping="Wrap" Margin="0,0,0,10"/>
+                <StackPanel x:Name="FixedCostList"/>
+              </StackPanel></Expander>
+              <Expander x:Name="MoneyComposer" Header="수입·지출 추가 · 수정" Margin="0,12,0,0" AutomationProperties.Name="가계부 입력 영역 펼치기"><StackPanel>
+                <TextBlock x:Name="MoneyEditorTitle" Text="새 가계부 기록" Style="{StaticResource SectionLabel}" Margin="0,18,0,10"/>
+                <TextBlock Text="구분" Foreground="{DynamicResource Muted}"/><ComboBox x:Name="MoneyKindChoice" SelectionChanged="MoneyKind_Changed" AutomationProperties.Name="수입 또는 지출"/>
+                <TextBlock Text="유형" Foreground="{DynamicResource Muted}"/><ComboBox x:Name="MoneyCategoryChoice" SelectionChanged="JournalChoice_Changed" AutomationProperties.Name="가계부 유형"/>
+                <TextBlock Text="내역명 · 고정 지출은 필수" Foreground="{DynamicResource Muted}"/><TextBox x:Name="MoneyTitle" MaxLength="200" TextChanged="Journal_Changed" AutomationProperties.Name="가계부 내역명 예 통신비 넷플릭스 청년적금"/>
+                <TextBlock Text="예: 휴대폰 요금, 넷플릭스, 청년 적금" Foreground="{DynamicResource Muted}" TextWrapping="Wrap" Margin="0,0,0,10"/>
+                <CheckBox x:Name="MoneyFixed" Content="고정 지출 · 저축" Checked="FixedCost_Changed" Unchecked="FixedCost_Changed" Margin="0,4,0,8" Foreground="{DynamicResource Ink}"/>
+                <CheckBox x:Name="MoneyRepeat" Content="매월 반복 · 선택한 날짜를 지정일로" Checked="FixedCost_Changed" Unchecked="FixedCost_Changed" IsEnabled="False" Margin="0,4,0,8" Foreground="{DynamicResource Ink}"/>
+                <TextBlock Text="적금은 유형에서 ‘적금·저축’을 선택하세요. 첫 금액도 하단 저장으로 반영돼요. 이 화면의 수정은 해당 날짜만 바꾸며, 매월 고정 지출 관리에서 미래 적용 월·금액과 종료 월을 설정할 수 있어요." Foreground="{DynamicResource Muted}" TextWrapping="Wrap" Margin="0,0,0,10"/>
+                <TextBlock Text="금액 · 원" Foreground="{DynamicResource Muted}"/><TextBox x:Name="MoneyAmount" TextAlignment="Right" MaxLength="18" TextChanged="Journal_Changed" LostFocus="MoneyAmount_LostFocus" AutomationProperties.Name="가계부 금액 원"/>
+                <TextBlock Text="양수로 입력해 주세요. 예: 12,000" Foreground="{DynamicResource Muted}" TextWrapping="Wrap" Margin="0,0,0,10"/>
+                <TextBlock Text="메모 · 선택" Foreground="{DynamicResource Muted}"/><TextBox x:Name="MoneyNote" MaxLength="2000" AcceptsReturn="True" TextWrapping="Wrap" Height="72" VerticalScrollBarVisibility="Auto" TextChanged="Journal_Changed" AutomationProperties.Name="가계부 메모"/>
+                <TextBlock x:Name="MoneyError" Foreground="{DynamicResource Sunday}" TextWrapping="Wrap" Margin="0,4,0,8" Visibility="Collapsed"/>
+                <Button x:Name="MoneyCancel" Content="입력 취소" Click="MoneyCancel_Click" HorizontalAlignment="Left"/>
+              </StackPanel></Expander>
+            </StackPanel></ScrollViewer>
+            <ScrollViewer x:Name="StudyPane" Grid.Row="2" Visibility="Collapsed" VerticalScrollBarVisibility="Auto"><StackPanel Margin="18,18,18,4">
+              <TextBlock Text="오늘 공부한 것" Style="{StaticResource SectionLabel}"/>
+              <TextBlock x:Name="StudyCount" Foreground="{DynamicResource Muted}" TextWrapping="Wrap" Margin="0,8,0,12"/>
+              <TextBlock x:Name="StudyEmpty" Text="아직 학습 기록이 없어요." Foreground="{DynamicResource Muted}" Margin="0,8,0,12"/>
+              <StackPanel x:Name="StudyList"/>
+              <Expander x:Name="StudyComposer" Header="학습 추가 · 수정" Margin="0,12,0,0" AutomationProperties.Name="학습 입력 영역 펼치기"><StackPanel>
+                <TextBlock x:Name="StudyEditorTitle" Text="새 학습 기록" Style="{StaticResource SectionLabel}" Margin="0,18,0,10"/>
+                <TextBlock Text="제목" Foreground="{DynamicResource Muted}"/><TextBox x:Name="StudyTitle" MaxLength="200" TextChanged="Journal_Changed" LostFocus="StudyTitle_LostFocus" AutomationProperties.Name="학습 제목"/>
+                <TextBlock Text="소요 시간 · 선택" Foreground="{DynamicResource Muted}" Margin="0,12,0,0"/>
+                <Grid Margin="0,4,0,0"><Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
+                  <TextBox x:Name="StudyHours" MaxLength="2" TextAlignment="Right" TextChanged="Journal_Changed" AutomationProperties.Name="학습 소요 시간 시간"/>
+                  <TextBlock Grid.Column="1" Text="시간" VerticalAlignment="Center" Margin="8,0,12,0"/>
+                  <TextBox Grid.Column="2" x:Name="StudyMinutes" MaxLength="2" TextAlignment="Right" TextChanged="Journal_Changed" AutomationProperties.Name="학습 소요 시간 분"/>
+                  <TextBlock Grid.Column="3" Text="분" VerticalAlignment="Center" Margin="8,0,0,0"/>
+                </Grid>
+                <TextBlock Text="공부한 내용 · 선택" Foreground="{DynamicResource Muted}"/><TextBox x:Name="StudyContent" MaxLength="10000" Height="150" AcceptsReturn="True" TextWrapping="Wrap" VerticalScrollBarVisibility="Auto" TextChanged="Journal_Changed" AutomationProperties.Name="공부한 내용"/>
+                <TextBlock Text="핵심 요약 · 직접 입력 · 선택" Foreground="{DynamicResource Muted}" Margin="0,12,0,0"/><TextBox x:Name="StudySummary" MaxLength="2000" Height="104" AcceptsReturn="True" TextWrapping="Wrap" VerticalScrollBarVisibility="Auto" TextChanged="Journal_Changed" AutomationProperties.Name="학습 핵심 요약"/>
+                <TextBlock Text="첨부 자료 · 선택" Foreground="{DynamicResource Muted}" Margin="0,12,0,4"/>
+                <TextBlock Text="문서·이미지·ZIP · 파일당 50MB · 최대 10개" Foreground="{DynamicResource Muted}" TextWrapping="Wrap" Margin="0,0,0,6"/>
+                <StackPanel x:Name="StudyAttachmentDraftList"/>
+                <Button x:Name="AttachStudyFileButton" Content="파일 첨부" Click="AttachStudyFile_Click" HorizontalAlignment="Left"/>
+                <TextBlock x:Name="StudyError" Foreground="{DynamicResource Sunday}" TextWrapping="Wrap" Margin="0,4,0,8" Visibility="Collapsed"/>
+                <Button x:Name="StudyCancel" Content="입력 취소" Click="StudyCancel_Click" HorizontalAlignment="Left"/>
+              </StackPanel></Expander>
+            </StackPanel></ScrollViewer>
+            <StackPanel Grid.Row="3" Margin="18,8,18,16"><TextBlock x:Name="SaveStatus" Text="선택한 날짜의 기록" Foreground="{DynamicResource Muted}" TextWrapping="Wrap" Margin="0,0,0,8"/><Button x:Name="SaveButton" Content="저장" Style="{StaticResource PrimaryButton}" Background="{DynamicResource Accent}" Foreground="{DynamicResource AccentInk}" ToolTip="모든 기록 탭의 변경을 함께 저장해요." Click="Save_Click" Margin="0" Padding="12,7"/></StackPanel>
           </Grid>
         </Border>
-        <ScrollViewer x:Name="StatisticsPane" Grid.ColumnSpan="2" Visibility="Collapsed" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled" HorizontalContentAlignment="Stretch" Margin="20,8,20,16"><StackPanel x:Name="StatisticsContent" MinWidth="700" Margin="0,0,12,8"/></ScrollViewer>
+        </Grid>
+        <Border x:Name="RecordsHost" Grid.ColumnSpan="2" Visibility="Collapsed" Background="{DynamicResource Paper}" CornerRadius="20" Margin="20,8,20,16"><ContentControl x:Name="RecordToolsPresenter" HorizontalContentAlignment="Stretch" VerticalContentAlignment="Stretch"/></Border>
+        <ScrollViewer x:Name="StatisticsPane" Background="{DynamicResource Paper}" Padding="16" Grid.ColumnSpan="2" Visibility="Collapsed" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled" HorizontalContentAlignment="Stretch" Margin="20,8,20,16"><StackPanel x:Name="StatisticsContent" MinWidth="700" Margin="0,0,12,8"/></ScrollViewer>
       </Grid>
-      <Grid Grid.Row="2" x:Name="Footer" Margin="20,0,20,9"><Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
+      <Grid x:Name="PageTurnLayer" Grid.Row="1" Grid.RowSpan="2" Panel.ZIndex="18" Visibility="Hidden" Background="Transparent" ClipToBounds="True"/>
+      <Grid Grid.Row="3" x:Name="Footer" Margin="24,0,24,10"><Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
         <TextBlock x:Name="Status" Text="기록을 준비하고 있어요." ToolTip="X는 트레이로 숨겨요. 앱을 다시 실행하면 숨긴 창이 열려요." Foreground="{DynamicResource Muted}" TextWrapping="Wrap" VerticalAlignment="Center"/>
         <Button Grid.Column="1" Content="완전히 종료" Padding="6,2" Margin="8,0,0,0" Background="Transparent" Click="Exit_Click"/>
       </Grid>
-      <Grid x:Name="ReminderOverlay" Grid.RowSpan="3" Visibility="Collapsed" Panel.ZIndex="20" Background="#55000000">
-        <Border x:Name="ReminderCard" Width="520" MaxHeight="540" Background="{DynamicResource Paper}" CornerRadius="14" Padding="22" HorizontalAlignment="Center" VerticalAlignment="Center" KeyboardNavigation.TabNavigation="Cycle">
+      <Grid x:Name="ReminderOverlay" Grid.RowSpan="4" Visibility="Collapsed" Panel.ZIndex="20" Background="#55000000">
+        <Border x:Name="ReminderCard" Width="520" MaxHeight="540" Background="{DynamicResource Paper}" CornerRadius="20" Padding="24" HorizontalAlignment="Center" VerticalAlignment="Center" KeyboardNavigation.TabNavigation="Cycle">
           <Grid><Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/><RowDefinition Height="*"/><RowDefinition Height="Auto"/></Grid.RowDefinitions>
             <Grid><Grid.ColumnDefinitions><ColumnDefinition/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions><TextBlock Text="오늘 아직 남은 할 일이 있어요" FontSize="{x:Static ui:UiTypography.Subheading}" TextWrapping="Wrap" Margin="0,0,12,0" VerticalAlignment="Center"/><Button x:Name="ReminderClose" Grid.Column="1" Content="×" ToolTip="할 일 알림 닫기" Click="DismissReminder_Click" Padding="8,2"/></Grid>
             <StackPanel Grid.Row="1" Margin="0,10,0,12"><TextBlock x:Name="ReminderHeading" TextWrapping="Wrap"/><TextBlock Text="저장된 계획 기준이에요. 닫아도 계획은 그대로 남아요." Foreground="{DynamicResource Muted}" TextWrapping="Wrap" Margin="0,5,0,0"/></StackPanel>

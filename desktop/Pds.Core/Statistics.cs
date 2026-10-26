@@ -76,7 +76,8 @@ public sealed partial class PlanRepository
         command.CommandText = "SELECT date FROM days WHERE date >= $from AND date <= $to UNION SELECT p.date FROM plans p JOIN plan_metadata m ON m.plan_id=p.id WHERE m.actual_date >= $from AND m.actual_date <= $to ORDER BY date";
         command.Parameters.AddWithValue("$from", Key(range.From)); command.Parameters.AddWithValue("$to", Key(range.To));
         var dates = new List<DateOnly>(); using (var reader = command.ExecuteReader()) while (reader.Read()) dates.Add(DateOnly.ParseExact(reader.GetString(0), "yyyy-MM-dd", CultureInfo.InvariantCulture));
-        var days = dates.Select(d => ReadDay(connection, transaction, d)).ToArray(); transaction.Commit();
+        // Workout statistics never need to materialize long study bodies or finance notes.
+        var days = dates.Select(d => ReadDay(connection, transaction, d, includeJournal: false)).ToArray(); transaction.Commit();
         return StatisticsReport.Create(days, range, filter);
     }
 }

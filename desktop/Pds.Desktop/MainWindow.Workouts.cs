@@ -31,13 +31,20 @@ public partial class MainWindow
     private void SelectRecordTab(bool workout) => SelectRecordTab(workout ? "workout" : "plan");
     private void SelectRecordTab(string tab)
     {
+        var nextPane = tab switch { "plan" => PlanPane, "workout" => WorkoutPane, "money" => MoneyPane, "study" => StudyPane, _ => ReviewPane };
+        var changingTab = nextPane.Visibility != Visibility.Visible;
         PlanPane.Visibility = tab == "plan" ? Visibility.Visible : Visibility.Collapsed;
         WorkoutPane.Visibility = tab == "workout" ? Visibility.Visible : Visibility.Collapsed;
         ReviewPane.Visibility = tab == "review" ? Visibility.Visible : Visibility.Collapsed;
+        MoneyPane.Visibility = tab == "money" ? Visibility.Visible : Visibility.Collapsed;
+        StudyPane.Visibility = tab == "study" ? Visibility.Visible : Visibility.Collapsed;
         PlanTab.SetResourceReference(BackgroundProperty, tab == "plan" ? "Note" : "Soft");
         WorkoutTab.SetResourceReference(BackgroundProperty, tab == "workout" ? "Note" : "Soft");
         ReviewTab.SetResourceReference(BackgroundProperty, tab == "review" ? "Note" : "Soft");
-        SaveButton.ToolTip = "계획·운동·회고 탭의 변경을 함께 저장해요.";
+        MoneyTab.SetResourceReference(BackgroundProperty, tab == "money" ? "Note" : "Soft");
+        StudyTab.SetResourceReference(BackgroundProperty, tab == "study" ? "Note" : "Soft");
+        SaveButton.ToolTip = "계획·운동·회고·가계부·학습 탭의 변경을 함께 저장해요.";
+        if (changingTab) CalmMotion.Reveal(nextPane, CalmMotion.TabMs);
     }
     private bool ConfirmExerciseChange() => !HasWorkoutValues || System.Windows.MessageBox.Show(this,
         "종목을 바꾸면 현재 운동의 시간·횟수·메모 입력을 비워요. 바꿀까요?", "종목 변경", MessageBoxButton.YesNo, MessageBoxImage.Question) == MessageBoxResult.Yes;
@@ -65,6 +72,7 @@ public partial class MainWindow
             ClearWorkoutValues(); previousExercise = WorkoutExercise.SelectedItem as Exercise; workoutEditing = null; WorkoutEditorTitle.Text = "새 운동";
         }
         finally { changingExercise = false; UpdateWorkoutFields(); UpdateDraftStatus(); }
+        if (ready && WorkoutExercise.SelectedItem is not null) WorkoutComposer.IsExpanded = true;
     }
     private void UpdateWorkoutFields()
     {
@@ -90,6 +98,7 @@ public partial class MainWindow
         changingExercise = true; var wasSuppressed = suppress; suppress = true;
         try { ClearWorkoutValues(); WorkoutExercise.SelectedIndex = -1; previousExercise = null; workoutEditing = null; WorkoutEditorTitle.Text = "새 운동"; }
         finally { changingExercise = false; suppress = wasSuppressed; UpdateWorkoutFields(); }
+        if (WorkoutComposer is not null) WorkoutComposer.IsExpanded = false;
     }
     private void CancelWorkoutEdit_Click(object sender, RoutedEventArgs e)
     {
@@ -154,6 +163,7 @@ public partial class MainWindow
             ConfigureEnergyExercise(exercise); LoadEnergyEditor(entry);
         }
         finally { changingExercise = false; suppress = false; UpdateWorkoutFields(); UpdateDraftStatus(); }
+        OpenComposer(WorkoutComposer, WorkoutExercise);
     }
     private void DrawWorkouts()
     {
@@ -183,7 +193,7 @@ public partial class MainWindow
                 workouts.RemoveAll(w => w.Id == entry.Id); if (workoutEditing == entry.Id) ClearWorkoutEditor(); DrawWorkouts(); MarkDirty();
             };
             actions.Children.Add(edit); actions.Children.Add(delete); panel.Children.Add(actions);
-            WorkoutList.Children.Add(new Border { Background = ResourceBrush("Soft"), CornerRadius = new CornerRadius(8), Padding = new Thickness(10, 8, 10, 5), Margin = new Thickness(0, 0, 0, 8), Child = panel });
+            WorkoutList.Children.Add(new Border { Background = ResourceBrush("Paper"), CornerRadius = new CornerRadius(12), Padding = new Thickness(12, 10, 12, 7), Margin = new Thickness(0, 0, 0, 8), Child = panel });
         }
     }
 }

@@ -123,6 +123,8 @@ public partial class MainWindow
                         var shared = (Grid)Cell(new(2026, 5, 24)).Content;
                         var name = shared.Children.OfType<StackPanel>().SelectMany(p => p.Children.OfType<TextBlock>()).Single(t => t.Tag as string == "anniversary-caption");
                         var lastName = name.ContentEnd.GetCharacterRect(LogicalDirection.Backward);
+                        File.AppendAllText(Path.Combine(Path.GetDirectoryName(repository.DatabasePath)!, "holiday-birthday-metrics.txt"), $"{label}: text={name.Text.Replace('\n','|')}, last={lastName}, width={name.ActualWidth}, top={name.TranslatePoint(new Point(),shared).Y}, height={shared.ActualHeight}\n");
+                        Capture("holiday-birthday-may-"+label+".png");
                         Check(name.Text.Replace('\n', ' ') == "생일: 어머니" && !lastName.IsEmpty
                             && lastName.Right <= name.ActualWidth + 1 && name.TranslatePoint(new Point(), shared).Y + lastName.Bottom <= shared.ActualHeight + 1,
                             "holiday-and-birthday-coexist-with-readable-full-name-" + label);

@@ -92,7 +92,7 @@ static class CompletionChecks
         var invalid = parsed with { Days = parsed.Days.Concat([parsed.Days[0]]).ToArray() };
         Expect<InvalidDataException>(() => restored.RestoreBackup(invalid), "Duplicate backup dates rejected before replacement");
         check(restored.Load(day).Plans.SequenceEqual(repository.Load(day).Plans), "Rejected backup leaves existing records unchanged");
-        Expect<InvalidDataException>(() => BackupFile.Parse(BackupFile.Serialize(parsed).Replace("\"Version\": 3", "\"Version\": 999")), "Unknown backup version rejected");
+        Expect<InvalidDataException>(() => BackupFile.Parse(BackupFile.Serialize(parsed).Replace("\"Version\": 8", "\"Version\": 999")), "Unknown backup version rejected");
         Expect<InvalidDataException>(() => BackupFile.Parse("{broken}"), "Malformed JSON rejected");
         Expect<InvalidDataException>(() => BackupFile.Parse(BackupFile.Serialize(parsed).Replace("\"Format\":", "\"Unexpected\":0,\"Format\":")), "Unknown backup fields rejected");
         var invalidSport = parsed with { Days = [new DaySnapshot(day, 1, []) { Workouts = [WorkoutEntry.Create("unknown-sport", 10, null)] }], Origins = [], Moves = [] };
